@@ -4,3 +4,4 @@ build/*.out
 .vscode/*
 assets/*
 imgui.ini
+trash/*
