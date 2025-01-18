@@ -1,7 +1,9 @@
-build/*
-build/*.out
+build/
 .vscode
 .vscode/*
 assets/*
 imgui.ini
-trash/*
+trash/
+compile_commands.json
+.cache/
+

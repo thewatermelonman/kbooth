@@ -1,6 +1,6 @@
+#include <SDL3/SDL.h>
 #include <iostream>
 #include <string>
-#include <SDL3/SDL.h>
 #include "SimpleIni.h"
 #include "Camera.h"
 #include "Kbooth.h"
