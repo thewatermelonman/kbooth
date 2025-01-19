@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include <SDL3/SDL.h>
+#include "Kbooth.h"
 namespace Kbooth {
     class Camera {
     private:
@@ -14,7 +15,7 @@ namespace Kbooth {
         ~Camera();
         void getDevices();
         bool open(int device);
-        void renderFrame(SDL_Renderer *renderer, SDL_Window *window);
+        void renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing* framing);
     };
 }
 #endif // CAMERA_H

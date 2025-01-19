@@ -13,16 +13,18 @@ int main() {
     std::cout << "config" << std::endl;
     CSimpleIniA ini;
     ini.SetUnicode();
+	int window_width = 1900;
+	int window_height = 1080;
     if (ini.LoadFile("assets/settings/config.ini") < 0) {
-        EXIT_WITH_ERROR("could not load settings congfig.ini file.");
-    }
- 	std::cout << ini.GetValue("config", "PrintSize", "a6") << std::endl;
-
+ 		std::cout << "NO SETTINGS FILE FOUND. RUNNING WITH DEFAULT."<< std::endl;
+	} else {
+		std::cout << ini.GetValue("config", "PrintSize", "a6") << std::endl;
+		window_width = (int)ini.GetLongValue("config", "CameraWidth", 1900);
+		window_height = (int)ini.GetLongValue("config", "CameraHeight", 1080);
+	}
     SDL_Window *window;
     SDL_Renderer *renderer = NULL;
     Kbooth::Settings *settings = {0};
-    int window_width = (int)ini.GetLongValue("config", "CameraWidth", 190);
-    int window_height = (int)ini.GetLongValue("config", "CameraHeight", 100);
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
@@ -54,7 +56,7 @@ int main() {
             if (window_should_close) break;
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColorFloat(renderer, 0.3, 0.3, 0.3, 1.0);
-            camera.renderFrame(renderer, window);
+            camera.renderFrame(renderer, window, ui.getFraming());
             ui.render();
             SDL_RenderPresent(renderer);
         }

@@ -1,6 +1,9 @@
 #include "Camera.h"
 #include <iostream>
+#include "Kbooth.h"
 #include "SDL3/SDL_render.h"
+#include "SDL3/SDL_surface.h"
+#include <cmath>
 using namespace Kbooth;
 
 Camera::Camera() {
@@ -50,7 +53,7 @@ bool Camera::open(int device) {
     return true;
 }
 
-void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window) {
+void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing *framing) {
     Uint64 timestampNS;
     SDL_Surface *frame = SDL_AcquireCameraFrame(this->camera, &timestampNS);
 
@@ -74,17 +77,32 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window) {
         }
         SDL_ReleaseCameraFrame(this->camera, frame);
     }
-    int win_w, win_h;
-    SDL_FRect d;
-    if (this->texture) {
-        SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-        d.x = ((win_w - this->texture->w) / 2.0f);
-        d.y = ((win_h - this->texture->h) / 2.0f);
-        d.w = (float)texture->w;
-        d.h = (float)texture->h;
-        SDL_RenderTexture(renderer, this->texture, NULL, &d);
-        // SDL_RenderCopyEx(renderer, this->texture, NULL, NULL, 0.0, NULL, SDL_FLIP_VERTICAL);
-    }
+
+	SDL_FRect d;
+	int win_w, win_h;
+		float scale;
+	if (this->texture) {
+		SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+		int tex_w = this->texture->w;
+		int tex_h = this->texture->h;
+		float zoom_crop_x = tex_w * (framing->zoom - 1);
+		float zoom_crop_y = tex_h * (framing->zoom - 1);
+		float aspect_win = (float) win_w / win_h;
+		float aspect_tex = (float) tex_w / tex_h;
+		if (aspect_tex > aspect_win) {
+			scale = (float) win_w / tex_w;
+			d.x = 0.0f + (framing->pos_x - 1) * zoom_crop_x;
+			d.y = ( (win_h - tex_h * scale) / 2.0f ) + (framing->pos_y - 1) * zoom_crop_y;
+		} else {
+			scale = (float) win_h / tex_h;
+			d.y = 0.0f + (framing->pos_y - 1) * zoom_crop_y ;
+			d.x = ( (win_w - tex_w * scale) / 2.0f ) + (framing->pos_x - 1) * zoom_crop_x;
+		}
+			d.w =  tex_w * scale + zoom_crop_x * 2;
+			d.h =  tex_h * scale + zoom_crop_y * 2;
+		
+		SDL_RenderTextureRotated(renderer, this->texture, NULL, &d, 0.0, NULL, SDL_FLIP_NONE);
+	}
 }
 
 

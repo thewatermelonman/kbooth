@@ -1,8 +1,10 @@
 #include "UIWindow.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
+#include "imgui_internal.h"
 
 //#include "filesystem"
 //#include "iostream"
@@ -13,6 +15,9 @@ void createDropdown(char *label, char *options[], int *selection);
 UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
                    Settings *settings)
     : renderer(renderer), settings(settings), window(window) {
+
+
+	this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -77,7 +82,7 @@ void UIWindow::setStyleOptions() {
     ImGuiStyle &style = ImGui::GetStyle();
 
     style.Alpha = 1.0f;
-    style.DisabledAlpha = 1.0f;
+    style.DisabledAlpha = 0.4f;
     style.WindowPadding = ImVec2(16.10000038146973f, 16.10000038146973f);
     style.WindowRounding = 6.5f;
     style.WindowBorderSize = 1.0f;
@@ -108,7 +113,7 @@ void UIWindow::setStyleOptions() {
     style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
 
     style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 0.9080316424369812f, 0.8283261656761169f, 1.0f);
-    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.2274678349494934f, 0.1815837621688843f, 0.2244754284620285f, 1.0f);
+    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.2274678349494934f, 0.1815837621688843f, 0.2244754284620285f, 0.4f);
     style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.02947192452847958f, 0.1373390555381775f, 1.0f);
     style.Colors[ImGuiCol_ChildBg] = ImVec4(0.1587982773780823f, 0.08042144775390625f, 0.1530799120664597f, 1.0f);
     style.Colors[ImGuiCol_PopupBg] = ImVec4(0.0f, 0.02947192452847958f, 0.1373390555381775f, 1.0f);
@@ -181,16 +186,31 @@ int UIWindow::render() {
 
         const char *webcams[] = {"Option 1", "Option 2", "Option 3"};
         static int webcam = 0;
-        char *printsizes[] = {"A4", "A5", "A6"};
+        const char *printsizes[] = {"A4", "A5", "A6"};
         static int printsize = 0;
 
         ImGui::Combo("print size", &printsize, printsizes, IM_ARRAYSIZE(printsizes));
         ImGui::Combo("webcams", &printsize, printsizes, IM_ARRAYSIZE(printsizes));
+		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f");
+
+		if (this->framing.zoom == 1.0) {
+			this->framing.pos_x = 0.0;
+			this->framing.pos_y = 0.0;
+			ImGui::BeginDisabled();
+		}
+		ImGui::SliderFloat("Position X", &this->framing.pos_x, -0.5f, 0.5f, "Left/Right");
+		ImGui::SliderFloat("Position Y", &this->framing.pos_y, -0.5f, 0.5f, "Up/Down");
+		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
 
         ImGui::End(); // End Example Window
     }
     ImGui::PopFont();
+	ImGui::ShowDemoWindow();
     ImGui::Render();
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
     return 0;
+}
+
+KB_framing* UIWindow::getFraming() {
+	return &this->framing;
 }

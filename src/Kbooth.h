@@ -6,5 +6,11 @@ namespace Kbooth
     {
         int a;
     };
+	struct KB_framing
+	{
+		float zoom;
+		float pos_x;
+		float pos_y;
+	};
 }
 #endif // KBOOTH_H

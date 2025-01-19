@@ -13,11 +13,16 @@ private:
     ImFont *font_title;
     void setStyleOptions();
 
+	// Settings
+	Kbooth::KB_framing framing;
 public:
     UIWindow(SDL_Window *window, SDL_Renderer *renderer,
              Kbooth::Settings *settings);
     ~UIWindow();
     void processEvent(SDL_Event *event);
     int render();
+
+	// Settings
+	Kbooth::KB_framing* getFraming();
 };
 #endif // IUWINDOW_H
