@@ -6,6 +6,16 @@
 #include <cmath>
 using namespace Kbooth;
 
+void cropTexture(float *d_dim_1, 
+				float *d_dim_2, 
+				float zoom, 
+				float zoom_pos_dim_1, 
+				float zoom_pos_dim_2, 
+				int window_dim_1, 
+				int window_dim_2, 
+				int texture_dim_1, 
+				int texture_dim_2);
+
 Camera::Camera() {
     this->getDevices();
     this->texture = NULL;
@@ -61,6 +71,8 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
         if (this->texture) {
             SDL_UpdateTexture(this->texture, NULL, frame->pixels, frame->pitch);
         } else {
+
+			std::cout << "created texture: " << std::endl;
             SDL_SetWindowSize(window, frame->w, frame->h); /* Resize the window to match */
             SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(frame);
             SDL_PropertiesID props = SDL_CreateProperties();
@@ -80,32 +92,33 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
 
 	SDL_FRect d;
 	int win_w, win_h;
-		float scale;
 	if (this->texture) {
 		SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-		int tex_w = this->texture->w;
-		int tex_h = this->texture->h;
-		float zoom_crop_x = tex_w * (framing->zoom - 1);
-		float zoom_crop_y = tex_h * (framing->zoom - 1);
+		float zoom_crop_x = texture->w * (framing->zoom - 1);
+		float zoom_crop_y = texture->h * (framing->zoom - 1);
 		float aspect_win = (float) win_w / win_h;
-		float aspect_tex = (float) tex_w / tex_h;
+		float aspect_tex = (float) texture->w / texture->h;
+		 float black_bar; 
+		float scale;
 		if (aspect_tex > aspect_win) {
-			scale = (float) win_w / tex_w;
-			d.x = 0.0f + (framing->pos_x - 1) * zoom_crop_x;
-			d.y = ( (win_h - tex_h * scale) / 2.0f ) + (framing->pos_y - 1) * zoom_crop_y;
+			// Texture wider than window
+			scale = (float) win_w / texture->w;
+			black_bar = (win_h - texture->h * scale) / 2.0f;
+			d.x = (framing->pos_x  - 1) * zoom_crop_x; // position offset - zoom crop
+			d.y = black_bar + (framing->pos_y * (zoom_crop_y - black_bar)) - zoom_crop_y; // black bar + position offset - zoom crop
 		} else {
-			scale = (float) win_h / tex_h;
-			d.y = 0.0f + (framing->pos_y - 1) * zoom_crop_y ;
-			d.x = ( (win_w - tex_w * scale) / 2.0f ) + (framing->pos_x - 1) * zoom_crop_x;
-		}
-			d.w =  tex_w * scale + zoom_crop_x * 2;
-			d.h =  tex_h * scale + zoom_crop_y * 2;
+			// Texture taller than window
+			scale = (float) win_h / texture->h;
+			black_bar = (win_w - texture->w * scale) / 2.0f;
+			d.y = (framing->pos_y - 1) * zoom_crop_y; 
+			d.x = black_bar + (framing->pos_x * (zoom_crop_x - black_bar)) - zoom_crop_x;
+		} 
+		// texture size + (and push image out of frame by 2 * the zoom_crop)
+		d.w = texture->w * scale + zoom_crop_x * 2;
+		d.h = texture->h * scale + zoom_crop_y * 2;
 		
 		SDL_RenderTextureRotated(renderer, this->texture, NULL, &d, 0.0, NULL, SDL_FLIP_NONE);
 	}
 }
 
 
-void flipVertical() {
-
-}

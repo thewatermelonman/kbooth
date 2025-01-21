@@ -198,8 +198,8 @@ int UIWindow::render() {
 			this->framing.pos_y = 0.0;
 			ImGui::BeginDisabled();
 		}
-		ImGui::SliderFloat("Position X", &this->framing.pos_x, -1.0f, 1.00f, "Left/Right");
-		ImGui::SliderFloat("Position Y", &this->framing.pos_y, -1.0f, 1.00f, "Up/Down");
+		ImGui::SliderFloat("Position X", &this->framing.pos_x, 1.0f, -1.00f, "Left/Right");
+		ImGui::SliderFloat("Position Y", &this->framing.pos_y, 1.0f, -1.00f, "Up/Down");
 		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
 
         ImGui::End(); // End Example Window
