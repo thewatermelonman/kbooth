@@ -73,7 +73,6 @@ bool Camera::open(int device) {
 }
 
 bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing *framing) {
-	std::cout << "RENDERING with state: " << SDL_GetCameraPermissionState(this->camera) << std::endl;
     Uint64 timestampNS;
     SDL_Surface *frame = SDL_AcquireCameraFrame(this->camera, &timestampNS);
 
@@ -100,8 +99,7 @@ bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
         }
         SDL_ReleaseCameraFrame(this->camera, frame);
     } else {
-			std::cerr << "Couldn't create frame: " << SDL_GetError() << std::endl;
-			return true;
+			return false;
 	}
 
 	SDL_FRect d;

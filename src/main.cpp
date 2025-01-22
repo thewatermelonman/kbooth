@@ -38,7 +38,6 @@ int main() {
     SDL_ShowWindow(window);
     bool window_should_close = false;
     {
-		std::cout << "LOOP" << std::endl;
         Kbooth::Camera camera;
         if (!camera.open(0)) {
             window_should_close = true;
