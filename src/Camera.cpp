@@ -1,20 +1,14 @@
 #include "Camera.h"
 #include <iostream>
 #include "Kbooth.h"
+#include "SDL3/SDL_events.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
+#include "SDL3/SDL_thread.h"
 #include <cmath>
+#include <sstream>
 using namespace Kbooth;
 
-void cropTexture(float *d_dim_1, 
-				float *d_dim_2, 
-				float zoom, 
-				float zoom_pos_dim_1, 
-				float zoom_pos_dim_2, 
-				int window_dim_1, 
-				int window_dim_2, 
-				int texture_dim_1, 
-				int texture_dim_2);
 
 Camera::Camera() {
     this->getDevices();
@@ -28,6 +22,7 @@ Camera::~Camera() {
     if (this->camera != nullptr) {
         SDL_CloseCamera(this->camera);
     }
+	std::cout << "Closing Camera Resources" << std::endl;
 }
 
 void Camera::getDevices() {
@@ -35,10 +30,18 @@ void Camera::getDevices() {
     if (this->cameraCount == 0 || this->cameraIDs == nullptr) {
         std::cout << "No available Cameras" << std::endl;
     }
-    std::cout << "Available Cameras" << std::endl;
     for (int i = 0; i < this->cameraCount; i++) {
-        std::cout << SDL_GetCameraName(this->cameraIDs[i]) << "\n";
+        std::cout << SDL_GetCameraName(this->cameraIDs[i]) << " with ID: " << this->cameraIDs[i] << "\n";
     }
+}
+
+const char ** Camera::getAvailCameraNames(int *size) {
+	const char ** cameras = new const char*[this->cameraCount];
+    for (int i = 0; i < this->cameraCount; i++) {
+		cameras[i] = SDL_GetCameraName(this->cameraIDs[i]);
+	}
+	*size = this->cameraCount;
+	return cameras;
 }
 
 bool Camera::open(int device) {
@@ -53,17 +56,24 @@ bool Camera::open(int device) {
         return false;
     }
 
-    // std::cout << "Available:" << this->cameraCount << " Chosen: " << SDL_GetCameraName(device) << " - " << device << std::endl;
     this->camera = SDL_OpenCamera(this->cameraIDs[device], NULL);
     if (this->camera == nullptr) {
-        std::cout << "Could not open Camera" << std::endl;
+        std::cout << "Could not open Camera " << this->cameraIDs[device] << std::endl;
         return false;
     }
-    std::cout << "Opened Camera" << std::endl;
-    return true;
+	int permission = 0;
+	while(permission == 0) {
+		permission = SDL_GetCameraPermissionState(this->camera);
+	}
+	if (permission == 1) {
+    	std::cout << "Opened Camera with ID: " << this->cameraIDs[device] << std::endl;
+		return true;
+	}
+    return false;
 }
 
-void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing *framing) {
+bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing *framing) {
+	std::cout << "RENDERING with state: " << SDL_GetCameraPermissionState(this->camera) << std::endl;
     Uint64 timestampNS;
     SDL_Surface *frame = SDL_AcquireCameraFrame(this->camera, &timestampNS);
 
@@ -84,11 +94,15 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
             this->texture = SDL_CreateTextureWithProperties(renderer, props);
             SDL_DestroyProperties(props);
             if (!this->texture) {
-				std::cout << "Couldn't create texture: " << SDL_GetError() << std::endl;
+				std::cerr << "Couldn't create texture: " << SDL_GetError() << std::endl;
+				return true;
             }
         }
         SDL_ReleaseCameraFrame(this->camera, frame);
-    }
+    } else {
+			std::cerr << "Couldn't create frame: " << SDL_GetError() << std::endl;
+			return true;
+	}
 
 	SDL_FRect d;
 	int win_w, win_h;
@@ -118,7 +132,9 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
 		d.h = texture->h * scale + zoom_crop_y * 2;
 		
 		SDL_RenderTextureRotated(renderer, this->texture, NULL, &d, 0.0, NULL, SDL_FLIP_NONE);
+		return false;
 	}
+	return true;
 }
 
 

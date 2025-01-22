@@ -7,7 +7,7 @@ namespace Kbooth {
     class Camera {
     private:
         int cameraCount;
-        SDL_CameraID* cameraIDs;
+        SDL_CameraID *cameraIDs;
         SDL_Camera *camera;
         SDL_Texture *texture;
     public:
@@ -15,7 +15,8 @@ namespace Kbooth {
         ~Camera();
         void getDevices();
         bool open(int device);
-        void renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing* framing);
+        bool renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing* framing);
+		const char ** getAvailCameraNames(int *size);
     };
 }
 #endif // CAMERA_H

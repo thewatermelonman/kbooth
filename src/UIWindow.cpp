@@ -1,23 +1,26 @@
 #include "UIWindow.h"
 
 #include "imgui.h"
-#include "imgui_internal.h"
+//#include "imgui_internal.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
-#include "imgui_internal.h"
+
+// #include <iostream>
 
 //#include "filesystem"
-//#include "iostream"
 using namespace Kbooth;
 
 void createDropdown(char *label, char *options[], int *selection);
 
 UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
-                   Settings *settings)
-    : renderer(renderer), settings(settings), window(window) {
+                   Settings *settings)//, Camera camera)
+    : renderer(renderer), settings(settings), window(window) {//, camera(camera){
 
 
 	this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
+	this->camera_index = 0;
+	this->cameras_size = 0;
+	//this->cameras = this->camera.getAvailCameraNames(&this->cameras_size);
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -184,13 +187,12 @@ int UIWindow::render() {
         ImGui::SeparatorText("General");
 
 
-        const char *webcams[] = {"Option 1", "Option 2", "Option 3"};
-        static int webcam = 0;
-        const char *printsizes[] = {"A4", "A5", "A6"};
-        static int printsize = 0;
-
-        ImGui::Combo("print size", &printsize, printsizes, IM_ARRAYSIZE(printsizes));
-        ImGui::Combo("webcams", &printsize, printsizes, IM_ARRAYSIZE(printsizes));
+		/* int old_index = this->camera_index;
+        ImGui::Combo("Webcam", &this->camera_index, cameras, this->cameras_size);
+		if (old_index != this->camera_index) {
+			std::cout << "Closing Camera " << old_index << " and opening " << this->camera_index << std::endl;
+			this->camera.open(this->camera_index);
+		} */
 		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f X");
 
 		if (this->framing.zoom == 1.0) {
@@ -198,9 +200,14 @@ int UIWindow::render() {
 			this->framing.pos_y = 0.0;
 			ImGui::BeginDisabled();
 		}
-		ImGui::SliderFloat("Position X", &this->framing.pos_x, 1.0f, -1.00f, "Left/Right");
-		ImGui::SliderFloat("Position Y", &this->framing.pos_y, 1.0f, -1.00f, "Up/Down");
+		ImVec2 width = ImGui::GetContentRegionAvail();
+		ImGui::PushItemWidth(width.x / 4.0f);
+		ImGui::SliderFloat("X", &this->framing.pos_x, 1.0f, -1.00f, "Left/Right");
+		ImGui::SameLine(0.0, width.x / 8.0f);
+		const ImVec2 slider_size(width.x / 4.0f, 45.0);
+		ImGui::VSliderFloat("Y", slider_size, &this->framing.pos_y, -1.0f, 1.0f, "Up/Down");
 		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
+		ImGui::PopItemWidth();
 
         ImGui::End(); // End Example Window
     }
@@ -213,4 +220,8 @@ int UIWindow::render() {
 
 KB_framing* UIWindow::getFraming() {
 	return &this->framing;
+}
+
+int UIWindow::getWebcamIndex() {
+	return this->camera_index;	
 }

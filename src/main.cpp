@@ -32,12 +32,13 @@ int main() {
     if (!SDL_CreateWindowAndRenderer("Kbooth", window_width, window_height, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         EXIT_WITH_ERROR("could not create window and renderer.");
     }
-    UIWindow ui = UIWindow(window, renderer, settings);
 
+    UIWindow ui = UIWindow(window, renderer, settings);//, camera);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_ShowWindow(window);
     bool window_should_close = false;
     {
+		std::cout << "LOOP" << std::endl;
         Kbooth::Camera camera;
         if (!camera.open(0)) {
             window_should_close = true;
@@ -56,7 +57,7 @@ int main() {
             if (window_should_close) break;
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColorFloat(renderer, 0.3, 0.3, 0.3, 1.0);
-            camera.renderFrame(renderer, window, ui.getFraming());
+            window_should_close = camera.renderFrame(renderer, window, ui.getFraming());
             ui.render();
             SDL_RenderPresent(renderer);
         }
