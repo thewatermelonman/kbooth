@@ -1,18 +1,15 @@
 #include "Camera.h"
 #include <iostream>
 #include "Kbooth.h"
-#include "SDL3/SDL_events.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
-#include "SDL3/SDL_thread.h"
-#include <cmath>
-#include <sstream>
 using namespace Kbooth;
 
 
 Camera::Camera() {
     this->getDevices();
     this->texture = NULL;
+	this-> camera = NULL;
 }
 
 Camera::~Camera() {
@@ -45,6 +42,10 @@ const char ** Camera::getAvailCameraNames(int *size) {
 }
 
 bool Camera::open(int device) {
+    if (this->camera != nullptr) { //close old camera
+        SDL_CloseCamera(this->camera);
+    }
+
     if (this->cameraCount == 0) {
         return false;
     }
@@ -72,7 +73,7 @@ bool Camera::open(int device) {
     return false;
 }
 
-bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing *framing) {
+void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing *framing, bool *window_should_close) {
     Uint64 timestampNS;
     SDL_Surface *frame = SDL_AcquireCameraFrame(this->camera, &timestampNS);
 
@@ -94,13 +95,11 @@ bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
             SDL_DestroyProperties(props);
             if (!this->texture) {
 				std::cerr << "Couldn't create texture: " << SDL_GetError() << std::endl;
-				return true;
+				*window_should_close = true;
             }
         }
         SDL_ReleaseCameraFrame(this->camera, frame);
-    } else {
-			return false;
-	}
+    }
 
 	SDL_FRect d;
 	int win_w, win_h;
@@ -130,9 +129,7 @@ bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
 		d.h = texture->h * scale + zoom_crop_y * 2;
 		
 		SDL_RenderTextureRotated(renderer, this->texture, NULL, &d, 0.0, NULL, SDL_FLIP_NONE);
-		return false;
 	}
-	return true;
 }
 
 

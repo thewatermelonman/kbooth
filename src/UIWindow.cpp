@@ -1,35 +1,31 @@
 #include "UIWindow.h"
 
 #include "imgui.h"
-//#include "imgui_internal.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
-// #include <iostream>
 
-//#include "filesystem"
 using namespace Kbooth;
 
 void createDropdown(char *label, char *options[], int *selection);
 
 UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
-                   Settings *settings)//, Camera camera)
-    : renderer(renderer), settings(settings), window(window) {//, camera(camera){
+                   Settings *settings, Camera *camera)
+    : renderer(renderer), settings(settings), window(window), camera(camera){
 
 
 	this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
 	this->camera_index = 0;
 	this->cameras_size = 0;
-	//this->cameras = this->camera.getAvailCameraNames(&this->cameras_size);
+	this->cameras = this->camera->getAvailCameraNames(&this->cameras_size);
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void)io;
-    io.ConfigFlags |=
-        ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |=
-        ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     setStyleOptions();
@@ -39,35 +35,6 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can
-    // also load multiple fonts and use ImGui::PushFont()/PopFont() to select
-    // them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you
-    // need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please
-    // handle those errors in your application (e.g. use an assertion, or display
-    // an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and
-    // stored into a texture when calling
-    // ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame
-    // below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use
-    // Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string
-    // literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at
-    // runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    // io.Fonts->AddFontDefault();
-    // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    // ImFont* font =
-    // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
-    // nullptr, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != nullptr);
-
     io.Fonts->AddFontDefault();
 
     font_regular = io.Fonts->AddFontFromFileTTF("assets/fonts/font1.ttf", 28.0f);
@@ -75,9 +42,65 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 }
 
 UIWindow::~UIWindow() {
+	delete[] this->cameras;
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+}
+
+void UIWindow::processEvent(SDL_Event *event) {
+    ImGui_ImplSDL3_ProcessEvent(event);
+}
+
+int UIWindow::render() {
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+
+    ImGui::NewFrame();
+
+    {
+        ImGui::PushFont(font_regular);
+        bool test = true;
+        ImGui::Begin("Kbooth  |><|  Settings", &test);
+        ImGui::SeparatorText("General");
+
+		int old_camera_index = this->camera_index;	
+        bool change = ImGui::Combo("Webcam", &this->camera_index, cameras, this->cameras_size);
+		if (change && old_camera_index != this->camera_index) {
+			this->camera->open(this->camera_index);
+			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
+		}
+		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f X");
+
+		if (this->framing.zoom == 1.0) {
+			this->framing.pos_x = 0.0;
+			this->framing.pos_y = 0.0;
+			ImGui::BeginDisabled();
+		}
+		ImVec2 width = ImGui::GetContentRegionAvail();
+		ImGui::PushItemWidth(width.x / 4.0f);
+		ImGui::SliderFloat("X", &this->framing.pos_x, 1.0f, -1.00f, "Left/Right");
+		ImGui::SameLine(0.0, width.x / 8.0f);
+		const ImVec2 slider_size(width.x / 4.0f, 45.0);
+		ImGui::VSliderFloat("Y", slider_size, &this->framing.pos_y, -1.0f, 1.0f, "Up/Down");
+		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
+		ImGui::PopItemWidth();
+
+        ImGui::End(); // End Example Window
+    }
+    ImGui::PopFont();
+	ImGui::ShowDemoWindow();
+    ImGui::Render();
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
+    return 0;
+}
+
+KB_framing* UIWindow::getFraming() {
+	return &this->framing;
+}
+
+int UIWindow::getWebcamIndex() {
+	return this->camera_index;	
 }
 
 void UIWindow::setStyleOptions() {
@@ -168,60 +191,4 @@ void UIWindow::setStyleOptions() {
     style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.699999988079071f);
     style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.2000000029802322f);
     style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.3499999940395355f);
-}
-
-void UIWindow::processEvent(SDL_Event *event) {
-    ImGui_ImplSDL3_ProcessEvent(event);
-}
-
-int UIWindow::render() {
-    ImGui_ImplSDLRenderer3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-
-    ImGui::NewFrame();
-
-    {
-        ImGui::PushFont(font_regular);
-        bool test = true;
-        ImGui::Begin("Kbooth  |><|  Settings", &test);
-        ImGui::SeparatorText("General");
-
-
-		/* int old_index = this->camera_index;
-        ImGui::Combo("Webcam", &this->camera_index, cameras, this->cameras_size);
-		if (old_index != this->camera_index) {
-			std::cout << "Closing Camera " << old_index << " and opening " << this->camera_index << std::endl;
-			this->camera.open(this->camera_index);
-		} */
-		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f X");
-
-		if (this->framing.zoom == 1.0) {
-			this->framing.pos_x = 0.0;
-			this->framing.pos_y = 0.0;
-			ImGui::BeginDisabled();
-		}
-		ImVec2 width = ImGui::GetContentRegionAvail();
-		ImGui::PushItemWidth(width.x / 4.0f);
-		ImGui::SliderFloat("X", &this->framing.pos_x, 1.0f, -1.00f, "Left/Right");
-		ImGui::SameLine(0.0, width.x / 8.0f);
-		const ImVec2 slider_size(width.x / 4.0f, 45.0);
-		ImGui::VSliderFloat("Y", slider_size, &this->framing.pos_y, -1.0f, 1.0f, "Up/Down");
-		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
-		ImGui::PopItemWidth();
-
-        ImGui::End(); // End Example Window
-    }
-    ImGui::PopFont();
-	ImGui::ShowDemoWindow();
-    ImGui::Render();
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
-    return 0;
-}
-
-KB_framing* UIWindow::getFraming() {
-	return &this->framing;
-}
-
-int UIWindow::getWebcamIndex() {
-	return this->camera_index;	
 }

@@ -33,7 +33,6 @@ int main() {
         EXIT_WITH_ERROR("could not create window and renderer.");
     }
 
-    UIWindow ui = UIWindow(window, renderer, settings);//, camera);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_ShowWindow(window);
     bool window_should_close = false;
@@ -42,6 +41,7 @@ int main() {
         if (!camera.open(0)) {
             window_should_close = true;
         }
+    	UIWindow ui = UIWindow(window, renderer, settings, &camera);
         while (!window_should_close) {
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -56,7 +56,7 @@ int main() {
             if (window_should_close) break;
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColorFloat(renderer, 0.3, 0.3, 0.3, 1.0);
-            window_should_close = camera.renderFrame(renderer, window, ui.getFraming());
+			camera.renderFrame(renderer, window, ui.getFraming(), &window_should_close);
             ui.render();
             SDL_RenderPresent(renderer);
         }

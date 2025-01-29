@@ -15,7 +15,7 @@ namespace Kbooth {
         ~Camera();
         void getDevices();
         bool open(int device);
-        bool renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing* framing);
+        void renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing* framing, bool *window_should_close);
 		const char ** getAvailCameraNames(int *size);
     };
 }

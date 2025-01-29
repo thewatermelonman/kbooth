@@ -19,10 +19,10 @@ private:
 	int camera_index;
 	int cameras_size;
 	const char ** cameras;
-	Kbooth::Camera camera;
+	Kbooth::Camera *camera;
 public:
     UIWindow(SDL_Window *window, SDL_Renderer *renderer,
-             Kbooth::Settings *settings);//, Kbooth::Camera camera);
+             Kbooth::Settings *settings, Kbooth::Camera *camera);
     ~UIWindow();
     void processEvent(SDL_Event *event);
     int render();
