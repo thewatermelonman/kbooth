@@ -11,13 +11,14 @@ void createDropdown(char *label, char *options[], int *selection);
 
 UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
                    Settings *settings, Camera *camera)
-    : renderer(renderer), settings(settings), window(window), camera(camera){
+    : renderer(renderer), settings(settings), window(window), camera(camera) {
 
 
-	this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
+	this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
 	this->camera_index = 0;
 	this->cameras_size = 0;
 	this->cameras = this->camera->getAvailCameraNames(&this->cameras_size);
+	this->opened = false;
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -50,9 +51,19 @@ UIWindow::~UIWindow() {
 
 void UIWindow::processEvent(SDL_Event *event) {
     ImGui_ImplSDL3_ProcessEvent(event);
+
+	if (event->type == SDL_EVENT_KEY_DOWN && event->key.key == SDLK_S) {
+		this->opened = !this->opened;
+	}
+}
+
+void UIWindow::open() {
+	this->opened = true;
 }
 
 int UIWindow::render() {
+	if (!this->opened) return 0;
+
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
 
@@ -60,8 +71,7 @@ int UIWindow::render() {
 
     {
         ImGui::PushFont(font_regular);
-        bool test = true;
-        ImGui::Begin("Kbooth  |><|  Settings", &test);
+        ImGui::Begin("Kbooth  |><|  Settings", &this->opened);
         ImGui::SeparatorText("General");
 
 		int old_camera_index = this->camera_index;	
@@ -70,6 +80,7 @@ int UIWindow::render() {
 			this->camera->open(this->camera_index);
 			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
 		}
+
 		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f X");
 
 		if (this->framing.zoom == 1.0) {
@@ -78,13 +89,25 @@ int UIWindow::render() {
 			ImGui::BeginDisabled();
 		}
 		ImVec2 width = ImGui::GetContentRegionAvail();
+
 		ImGui::PushItemWidth(width.x / 4.0f);
-		ImGui::SliderFloat("X", &this->framing.pos_x, 1.0f, -1.00f, "Left/Right");
-		ImGui::SameLine(0.0, width.x / 8.0f);
-		const ImVec2 slider_size(width.x / 4.0f, 45.0);
-		ImGui::VSliderFloat("Y", slider_size, &this->framing.pos_y, -1.0f, 1.0f, "Up/Down");
-		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
+
+			ImGui::BeginGroup();
+		
+				ImGui::SliderFloat("X", &this->framing.pos_x, 1.0f, -1.00f, "Left\tRight");
+
+				if (this->framing.zoom == 1.0) ImGui::EndDisabled();
+				ImGui::Checkbox("Mirror", &this->framing.mirror);
+				if (this->framing.zoom == 1.0) ImGui::BeginDisabled();
+
+			ImGui::EndGroup();
+
 		ImGui::PopItemWidth();
+		ImGui::SameLine(0.0, width.x / 16.0f);
+		const ImVec2 slider_size(width.x / 10.0f, 100.0);
+		ImGui::VSliderFloat("Y", slider_size, &this->framing.pos_y, -1.0f, 1.0f, "Up\n \nDown");
+		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
+
 
         ImGui::End(); // End Example Window
     }

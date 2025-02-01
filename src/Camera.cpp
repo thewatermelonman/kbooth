@@ -42,6 +42,10 @@ const char ** Camera::getAvailCameraNames(int *size) {
 }
 
 bool Camera::open(int device) {
+	if (this->texture != nullptr) {
+		SDL_DestroyTexture(this->texture);
+		this->texture = NULL;
+	}
     if (this->camera != nullptr) { //close old camera
         SDL_CloseCamera(this->camera);
     }
@@ -128,7 +132,7 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
 		d.w = texture->w * scale + zoom_crop_x * 2;
 		d.h = texture->h * scale + zoom_crop_y * 2;
 		
-		SDL_RenderTextureRotated(renderer, this->texture, NULL, &d, 0.0, NULL, SDL_FLIP_NONE);
+		SDL_RenderTextureRotated(renderer, this->texture, NULL, &d, 0.0, NULL, framing->mirror ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 	}
 }
 

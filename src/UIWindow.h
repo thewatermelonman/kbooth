@@ -8,6 +8,7 @@
 class UIWindow {
 private:
     Kbooth::Settings *settings;
+	bool opened;
     SDL_Renderer *renderer;
     SDL_Window *window;
     ImFont *font_regular;
@@ -30,5 +31,6 @@ public:
 	// Settings
 	Kbooth::KB_framing* getFraming();
 	int getWebcamIndex();
+	void open();
 };
 #endif // IUWINDOW_H

@@ -11,6 +11,7 @@ namespace Kbooth
 		float zoom;
 		float pos_x;
 		float pos_y;
+		bool mirror;
 	};
 }
 #endif // KBOOTH_H
