@@ -15,7 +15,7 @@ endif (WIN32)
 
 if (UNIX)
 	set(SDL3_INCLUDE_DIR "/usr/local/include/SDL3")
-	set(SDL3_LIBRARY "/usr/local/lib/SDL3/libSDL3.so") 
+	set(SDL3_LIBRARY "/usr/local/lib/libSDL3.so") 
 	set(CMAKE_CXX_COMPILER "c++")
 	set(CMAKE_C_COMPILER "cc")
 endif (UNIX)
