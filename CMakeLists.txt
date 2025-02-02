@@ -4,8 +4,22 @@ project(kbooth LANGUAGES CXX)
 
 set(KB_SRC_DIR "src")
 set(IMGUI_SRC_DIR "lib/imgui")
-set(SDL3_INCLUDE_DIR "C:/Program Files (x86)/SDL3/include")
-set(SDL3_LIBRARY "C:/Program Files (x86)/SDL3/lib/SDL3.lib") 
+
+if (WIN32)
+	set(SDL3_INCLUDE_DIR "C:/Program Files (x86)/SDL3/include")
+	set(SDL3_LIBRARY "C:/Program Files (x86)/SDL3/lib/SDL3.lib") 
+	set(CMAKE_CXX_COMPILER "g++.exe")
+	set(CMAKE_C_COMPILER "gcc.exe")
+endif (WIN32)
+
+
+if (UNIX)
+	set(SDL3_INCLUDE_DIR "usr/local/include/SDL3")
+	set(SDL3_LIBRARY "usr/local/lib/SDL3/SDL3") 
+	set(CMAKE_CXX_COMPILER "c++")
+	set(CMAKE_C_COMPILER "cc")
+endif (UNIX)
+
 set(KB_HEADERS 
 	"${KB_SRC_DIR}/Camera.h"
 	"${KB_SRC_DIR}/Kbooth.h"
@@ -32,8 +46,6 @@ set(KB_SOURCES
 	"${IMGUI_SRC_DIR}/imgui_impl_sdlrenderer3.cpp"
 	"${IMGUI_SRC_DIR}/imgui_impl_sdl3.cpp")
 
-set(CMAKE_CXX_COMPILER "g++.exe")
-set(CMAKE_C_COMPILER "gcc.exe")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #add_definitions(-DNO_WARN_X86_INTRINSICS)
 

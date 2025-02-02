@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include <iostream>
+#include <cstdio>
 #include "Kbooth.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
@@ -32,6 +33,10 @@ void Camera::getDevices() {
     }
 }
 
+int Camera::getOpendedCameraID() {
+	return SDL_GetCameraID(this->camera);
+}
+
 const char ** Camera::getAvailCameraNames(int *size) {
 	const char ** cameras = new const char*[this->cameraCount];
     for (int i = 0; i < this->cameraCount; i++) {
@@ -41,7 +46,26 @@ const char ** Camera::getAvailCameraNames(int *size) {
 	return cameras;
 }
 
-bool Camera::open(int device) {
+const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
+	SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(this->cameraIDs[camera_index], formats_size);
+	const char ** specs_description = new const char*[*formats_size];
+	for (int i = 0; i < *formats_size; i++) {
+		int size = snprintf(nullptr, 0, "%dx%d %.1ffps (%d)",
+		   specs[i]->width, specs[i]->height,
+		    (0.0f + specs[i]->framerate_numerator) / specs[i]->framerate_denominator, specs[i]->colorspace);
+
+		char *const description = new char[size + 1];
+		snprintf(description, size + 1, "%dx%d %.1ffps (%d)",
+		   specs[i]->width, specs[i]->height,
+		    (0.0f + specs[i]->framerate_numerator) / specs[i]->framerate_denominator, specs[i]->colorspace);
+		specs_description[i] = description;
+		std::cout << description << i << " from " << *formats_size << std::endl;
+	}
+	SDL_free(specs);
+	return specs_description;
+}
+
+bool Camera::open(int device, int format_index) {
 	if (this->texture != nullptr) {
 		SDL_DestroyTexture(this->texture);
 		this->texture = NULL;
@@ -61,7 +85,20 @@ bool Camera::open(int device) {
         return false;
     }
 
-    this->camera = SDL_OpenCamera(this->cameraIDs[device], NULL);
+	// Get selected format
+	int count;
+	SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(this->cameraIDs[device], &count);
+	if (format_index >= 0 && format_index < count) {
+    	this->camera = SDL_OpenCamera(this->cameraIDs[device], specs[format_index]);
+	} else if (format_index < 0) {
+    	this->camera = SDL_OpenCamera(this->cameraIDs[device], NULL);
+	} else {
+		SDL_free(specs);
+        std::cout << "Selected Format not available: " << format_index << std::endl;
+        return false;
+	}
+	SDL_free(specs);
+
     if (this->camera == nullptr) {
         std::cout << "Could not open Camera " << this->cameraIDs[device] << std::endl;
         return false;
@@ -87,7 +124,7 @@ void Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, KB_framing 
         } else {
 
 			std::cout << "created texture: " << std::endl;
-            SDL_SetWindowSize(window, frame->w, frame->h); /* Resize the window to match */
+            //SDL_SetWindowSize(window, frame->w, frame->h); /* Resize the window to match */
             SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(frame);
             SDL_PropertiesID props = SDL_CreateProperties();
             SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, frame->format);

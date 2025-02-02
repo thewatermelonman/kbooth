@@ -17,9 +17,15 @@ private:
 
 	// Settings
 	Kbooth::KB_framing framing;
-	int camera_index;
-	int cameras_size;
+
 	const char ** cameras;
+	int cameras_size;
+	int camera_index;
+
+	const char ** formats;
+	int formats_size;
+	int format_index;
+
 	Kbooth::Camera *camera;
 public:
     UIWindow(SDL_Window *window, SDL_Renderer *renderer,

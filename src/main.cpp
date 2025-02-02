@@ -38,7 +38,7 @@ int main() {
     bool window_should_close = false;
     {
         Kbooth::Camera camera;
-        if (!camera.open(0)) {
+        if (!camera.open(0, -1)) {
             window_should_close = true;
         }
     	UIWindow ui = UIWindow(window, renderer, settings, &camera);

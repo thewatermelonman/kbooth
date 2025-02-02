@@ -4,10 +4,12 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
+#include <iostream>
 
 using namespace Kbooth;
 
 void createDropdown(char *label, char *options[], int *selection);
+void free_formats(const char **formats, int size);
 
 UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
                    Settings *settings, Camera *camera)
@@ -18,6 +20,8 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 	this->camera_index = 0;
 	this->cameras_size = 0;
 	this->cameras = this->camera->getAvailCameraNames(&this->cameras_size);
+	this->formats = this->camera->getAvailFormatNames(this->camera_index, &this->formats_size);
+	this->format_index = -1;
 	this->opened = false;
 
     // Setup Dear ImGui context
@@ -43,6 +47,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 }
 
 UIWindow::~UIWindow() {
+	free_formats(this->formats, this->formats_size);
 	delete[] this->cameras;
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
@@ -74,12 +79,24 @@ int UIWindow::render() {
         ImGui::Begin("Kbooth  |><|  Settings", &this->opened);
         ImGui::SeparatorText("General");
 
-		int old_camera_index = this->camera_index;	
+		bool old_camera_index = this->camera_index;
         bool change = ImGui::Combo("Webcam", &this->camera_index, cameras, this->cameras_size);
 		if (change && old_camera_index != this->camera_index) {
-			this->camera->open(this->camera_index);
-			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0};
+			this->camera->open(this->camera_index, this->format_index);
+			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+			this->format_index = -1;
+			free_formats(this->formats, this->formats_size);
+			this->formats = this->camera->getAvailFormatNames(this->camera_index, &this->formats_size);
 		}
+		
+		bool old_format_index = this->format_index;
+        change = ImGui::Combo("Webcam Format", &this->format_index, this->formats, this->formats_size);
+		if (change && old_format_index != this->format_index) {
+			this->camera->open(this->camera_index, this->format_index);
+			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+			std::cout << this->formats_size << std::endl;
+		}
+
 
 		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f X");
 
@@ -214,4 +231,9 @@ void UIWindow::setStyleOptions() {
     style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.699999988079071f);
     style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.2000000029802322f);
     style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.3499999940395355f);
+}
+
+void free_formats(const char **formats, int size) {
+	for (int i = 0; i < 0; i++) delete formats[i];
+	delete formats;
 }
