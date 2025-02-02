@@ -1,7 +1,6 @@
 build/
 .vscode
 .vscode/*
-assets/*
 imgui.ini
 trash/
 compile_commands.json
