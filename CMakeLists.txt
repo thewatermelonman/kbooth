@@ -2,23 +2,17 @@ cmake_minimum_required(VERSION 3.15)
 
 project(kbooth LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(KB_SRC_DIR "src")
 set(IMGUI_SRC_DIR "lib/imgui")
 
-if (WIN32)
-	set(SDL3_INCLUDE_DIR "C:/Program Files (x86)/SDL3/include")
-	set(SDL3_LIBRARY "C:/Program Files (x86)/SDL3/lib/SDL3.lib") 
-	set(CMAKE_CXX_COMPILER "g++.exe")
-	set(CMAKE_C_COMPILER "gcc.exe")
-endif (WIN32)
-
-
+#[[ 
 if (UNIX)
 	set(SDL3_INCLUDE_DIR "/usr/local/include/SDL3")
 	set(SDL3_LIBRARY "/usr/local/lib/libSDL3.so") 
 	set(CMAKE_CXX_COMPILER "c++")
 	set(CMAKE_C_COMPILER "cc")
-endif (UNIX)
+endif (UNIX) ]]
 
 set(KB_HEADERS 
 	"${KB_SRC_DIR}/Camera.h"
@@ -46,14 +40,9 @@ set(KB_SOURCES
 	"${IMGUI_SRC_DIR}/imgui_impl_sdlrenderer3.cpp"
 	"${IMGUI_SRC_DIR}/imgui_impl_sdl3.cpp")
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-#add_definitions(-DNO_WARN_X86_INTRINSICS)
+find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
 
 add_executable(${PROJECT_NAME} ${KB_SOURCES} ${KB_HEADERS})
 
-target_include_directories(${PROJECT_NAME} 
-	PRIVATE 
-		${IMGUI_SRC_DIR}
-		${SDL3_INCLUDE_DIR}
-)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL3_LIBRARY})
+target_include_directories(${PROJECT_NAME} PRIVATE ${IMGUI_SRC_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
