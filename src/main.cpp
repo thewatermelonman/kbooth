@@ -9,6 +9,8 @@
 using namespace Kbooth;
 void EXIT_WITH_ERROR(std::string error_message);
 
+bool FULLSCREEN = false;
+
 int main() {
     std::cout << "config" << std::endl;
     CSimpleIniA ini;
@@ -52,6 +54,10 @@ int main() {
                     break;
                 }
                 ui.processEvent(&event);
+				if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_F) {
+					FULLSCREEN = !FULLSCREEN;
+					if (!SDL_SetWindowFullscreen(window, FULLSCREEN)) window_should_close = true;
+				}
             }
             if (window_should_close) break;
             SDL_RenderClear(renderer);
