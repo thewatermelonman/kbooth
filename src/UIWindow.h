@@ -7,16 +7,16 @@
 #include "Camera.h"
 class UIWindow {
 private:
-    Kbooth::Settings *settings;
-	bool opened;
     SDL_Renderer *renderer;
     SDL_Window *window;
+	Kbooth::Camera *camera;
     ImFont *font_regular;
     ImFont *font_title;
-    void setStyleOptions();
+	bool opened;
+	float alpha;
 
 	// Settings
-	Kbooth::KB_framing framing;
+    Kbooth::Settings *settings;
 
 	const char ** cameras;
 	int cameras_size;
@@ -26,17 +26,13 @@ private:
 	int formats_size;
 	int format_index;
 
-	Kbooth::Camera *camera;
+	// Methods
+    void setStyleOptions();
 public:
     UIWindow(SDL_Window *window, SDL_Renderer *renderer,
              Kbooth::Settings *settings, Kbooth::Camera *camera);
     ~UIWindow();
     void processEvent(SDL_Event *event);
-    int render();
-
-	// Settings
-	Kbooth::KB_framing* getFraming();
-	int getWebcamIndex();
-	void open();
+    void render();
 };
 #endif // IUWINDOW_H

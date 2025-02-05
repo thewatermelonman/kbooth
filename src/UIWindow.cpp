@@ -4,25 +4,23 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
-#include <iostream>
-
 using namespace Kbooth;
 
-void createDropdown(char *label, char *options[], int *selection);
 void free_formats(const char **formats, int size);
 
 UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
                    Settings *settings, Camera *camera)
     : renderer(renderer), settings(settings), window(window), camera(camera) {
 
+	//get available cameras
+	cameras = this->camera->getAvailCameraNames(&cameras_size);
+	camera_index = 0;
 
-	this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
-	this->camera_index = 0;
-	this->cameras_size = 0;
-	this->cameras = this->camera->getAvailCameraNames(&this->cameras_size);
-	this->formats = this->camera->getAvailFormatNames(this->camera_index, &this->formats_size);
-	this->format_index = -1;
-	this->opened = false;
+	//get available formats for the first (default) camera
+	formats = this->camera->getAvailFormatNames(camera_index, &formats_size);
+	format_index = -1;
+	opened = false;
+	alpha = 0.86;
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -32,9 +30,8 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 
-    // Setup Dear ImGui style
+    // Set custom Kbooth Dear ImGui style
     setStyleOptions();
-    // ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
@@ -47,8 +44,8 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 }
 
 UIWindow::~UIWindow() {
-	free_formats(this->formats, this->formats_size);
-	delete[] this->cameras;
+	free_formats(formats, formats_size);
+	delete[] cameras;
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
@@ -58,16 +55,16 @@ void UIWindow::processEvent(SDL_Event *event) {
     ImGui_ImplSDL3_ProcessEvent(event);
 
 	if (event->type == SDL_EVENT_KEY_DOWN && event->key.key == SDLK_S) {
-		this->opened = !this->opened;
+		opened = !opened;
+		if (opened) {
+			alpha = 0.86;
+			ImGui::GetStyle().Alpha = alpha;
+		}
 	}
 }
 
-void UIWindow::open() {
-	this->opened = true;
-}
-
-int UIWindow::render() {
-	if (!this->opened) return 0;
+void UIWindow::render() {
+	if (!opened) return;
 
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -76,33 +73,32 @@ int UIWindow::render() {
 
     {
         ImGui::PushFont(font_regular);
-        ImGui::Begin("Kbooth  |><|  Settings", &this->opened);
+        ImGui::Begin("Kbooth  |><|  Settings", &opened);
         ImGui::SeparatorText("General");
 
-		bool old_camera_index = this->camera_index;
-        bool change = ImGui::Combo("Webcam", &this->camera_index, cameras, this->cameras_size);
-		if (change && old_camera_index != this->camera_index) {
-			this->camera->open(this->camera_index, this->format_index);
-			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
-			this->format_index = -1;
-			free_formats(this->formats, this->formats_size);
-			this->formats = this->camera->getAvailFormatNames(this->camera_index, &this->formats_size);
+		bool old_camera_index = camera_index;
+        bool change = ImGui::Combo("Webcam", &camera_index, cameras, cameras_size);
+		if (change && old_camera_index != camera_index) {
+			camera->open(camera_index, format_index);
+			settings->Framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+			format_index = -1;
+			free_formats(formats, formats_size);
+			formats = camera->getAvailFormatNames(camera_index, &formats_size);
 		}
 		
-		bool old_format_index = this->format_index;
-        change = ImGui::Combo("Webcam Format", &this->format_index, this->formats, this->formats_size);
-		if (change && old_format_index != this->format_index) {
-			this->camera->open(this->camera_index, this->format_index);
-			this->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
-			std::cout << this->formats_size << std::endl;
+		bool old_format_index = format_index;
+        change = ImGui::Combo("Webcam Format", &format_index, formats, formats_size);
+		if (change && old_format_index != format_index) {
+			camera->open(camera_index, format_index);
+			settings->Framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
 		}
 
 
-		ImGui::SliderFloat("Zoom", &this->framing.zoom, 1.0f, 1.5f, "%.2f X");
+		ImGui::SliderFloat("Zoom", &settings->Framing.zoom, 1.0f, 1.5f, "%.2f X");
 
-		if (this->framing.zoom == 1.0) {
-			this->framing.pos_x = 0.0;
-			this->framing.pos_y = 0.0;
+		if (settings->Framing.zoom == 1.0) {
+			settings->Framing.pos_x = 0.0;
+			settings->Framing.pos_y = 0.0;
 			ImGui::BeginDisabled();
 		}
 		ImVec2 width = ImGui::GetContentRegionAvail();
@@ -111,20 +107,27 @@ int UIWindow::render() {
 
 			ImGui::BeginGroup();
 		
-				ImGui::SliderFloat("X", &this->framing.pos_x, 1.0f, -1.00f, "Left\tRight");
+				ImGui::SliderFloat("X", &settings->Framing.pos_x, 1.0f, -1.00f, "Left\tRight");
 
-				if (this->framing.zoom == 1.0) ImGui::EndDisabled();
-				ImGui::Checkbox("Mirror", &this->framing.mirror);
-				if (this->framing.zoom == 1.0) ImGui::BeginDisabled();
+				if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
+				ImGui::Checkbox("Mirror", &settings->Framing.mirror);
+				if (settings->Framing.zoom == 1.0) ImGui::BeginDisabled();
 
 			ImGui::EndGroup();
 
 		ImGui::PopItemWidth();
 		ImGui::SameLine(0.0, width.x / 16.0f);
 		const ImVec2 slider_size(width.x / 10.0f, 100.0);
-		ImGui::VSliderFloat("Y", slider_size, &this->framing.pos_y, -1.0f, 1.0f, "Up\n \nDown");
-		if (this->framing.zoom == 1.0) ImGui::EndDisabled();
+		ImGui::VSliderFloat("Y", slider_size, &settings->Framing.pos_y, -1.0f, 1.0f, "Up\n \nDown");
+		if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
 
+
+        ImGui::SeparatorText("Extra");
+
+		change = ImGui::SliderFloat("Transparency", &alpha, 1.0f, 0.2f, "%.2f");
+		if (change) {
+			ImGui::GetStyle().Alpha = alpha;
+		}
 
         ImGui::End(); // End Example Window
     }
@@ -132,22 +135,13 @@ int UIWindow::render() {
 	ImGui::ShowDemoWindow();
     ImGui::Render();
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
-    return 0;
-}
-
-KB_framing* UIWindow::getFraming() {
-	return &this->framing;
-}
-
-int UIWindow::getWebcamIndex() {
-	return this->camera_index;	
 }
 
 void UIWindow::setStyleOptions() {
     // ktheme style from ImThemes
     ImGuiStyle &style = ImGui::GetStyle();
 
-    style.Alpha = 1.0f;
+    style.Alpha = alpha;
     style.DisabledAlpha = 0.4f;
     style.WindowPadding = ImVec2(16.10000038146973f, 16.10000038146973f);
     style.WindowRounding = 6.5f;
