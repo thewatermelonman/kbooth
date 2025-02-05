@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <iostream>
 #include <string>
+#include "SDL3/SDL_stdinc.h"
 #include "SimpleIni.h"
 #include "Camera.h"
 #include "Kbooth.h"
@@ -8,12 +9,15 @@
 
 void EXIT_WITH_ERROR(std::string error_message);
 void handle_user_input(UIWindow *ui);
+void load_settings_config();
 
 bool FULLSCREEN = false;
 bool IN_IMAGE_CAPTURE = false;
 int IMAGE_CAPTURE_FRAME = 0;
 
 bool WINDOW_SHOULD_CLOSE = false;
+int WINDOW_WIDTH;
+int WINDOW_HEIGHT;
 
 
 SDL_Window *window = nullptr;
@@ -21,33 +25,12 @@ SDL_Renderer *renderer = nullptr;
 Kbooth::Settings settings;
 
 int main() {
-    std::cout << "config" << std::endl;
-    CSimpleIniA ini;
-    ini.SetUnicode();
-	int window_width = 1900;
-	int window_height = 1080;
-    if (ini.LoadFile("assets/settings/config.ini") < 0) {
- 		std::cout << "NO SETTINGS FILE FOUND. RUNNING WITH DEFAULT."<< std::endl;
-	} else {
-		std::cout << ini.GetValue("config", "PrintSize", "a6") << std::endl;
-		window_width = (int)ini.GetLongValue("config", "CameraWidth", 1900);
-		window_height = (int)ini.GetLongValue("config", "CameraHeight", 1080);
-	}
-	settings = {
-		.Framing = {
-			.zoom = 1.0f,
-			.pos_x = 0.0f, 
-			.pos_y = 0.0f, 
-			.mirror = true, 
-		},
-		.Capture_Button = SDLK_SPACE, 
-		.Capture_Duration = 60, 
-	};
+	load_settings_config();
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
     }
-    if (!SDL_CreateWindowAndRenderer("Kbooth", window_width, window_height, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+    if (!SDL_CreateWindowAndRenderer("Kbooth", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         EXIT_WITH_ERROR("could not create window and renderer.");
     }
 
@@ -78,9 +61,30 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-void EXIT_WITH_ERROR(std::string error_message) {
-    std::cerr << "[ERROR] " << error_message << std::endl;
-    exit(EXIT_FAILURE);
+void load_settings_config() {
+    CSimpleIniA ini;
+    ini.SetUnicode();
+	settings = {
+		.Framing = {
+			.zoom = 1.0f,
+			.pos_x = 0.0f, 
+			.pos_y = 0.0f, 
+			.mirror = true, 
+		},
+		.Capture_Button = SDLK_SPACE, 
+		.Capture_Duration = 60, 
+	};
+
+    if (ini.LoadFile("assets/settings/config.ini") < 0) {
+ 		std::cout << "NO SETTINGS FILE FOUND. RUNNING WITH DEFAULT."<< std::endl;
+	} else {
+		std::cout << ini.GetValue("config", "PrintSize", "a6") << std::endl;
+		WINDOW_WIDTH = (int)ini.GetLongValue("config", "WindowWidth", 1900);
+		WINDOW_HEIGHT = (int)ini.GetLongValue("config", "WindowHeight", 1080);
+		settings.Framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
+		settings.Capture_Button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
+		std::cout << settings.Capture_Button << " - " << SDLK_SPACE << std::endl;
+	}
 }
 
 void handle_user_input(UIWindow *ui) {
@@ -107,4 +111,9 @@ void handle_user_input(UIWindow *ui) {
 				IN_IMAGE_CAPTURE = true;
 		}
 	}
+}
+
+void EXIT_WITH_ERROR(std::string error_message) {
+    std::cerr << "[ERROR] " << error_message << std::endl;
+    exit(EXIT_FAILURE);
 }
