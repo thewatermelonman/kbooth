@@ -4,10 +4,11 @@
 #include "Kbooth.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
+#include "chrono"
 using namespace Kbooth;
 
 
-Camera::Camera() {
+Camera::Camera() : countdown({.len = 3, .pace = 1000, .active = false, .position = 3, .start_time = nullptr}) {
     texture = nullptr;
 	camera = nullptr;
     cameras = SDL_GetCameras(&cameras_size);
@@ -114,7 +115,34 @@ const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
 	return specs_description;
 }
 
+void Camera::startCountdown() {
+	auto duration = std::chrono::system_clock::now().time_since_epoch();
+	countdown.position = countdown.len;
+	countdown.start_time = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+	countdown.active = true;
+	std::cout << "Started Countdown at time " << countdown.start_time << "ms." << std::endl;
+}
+
 bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Framing *framing) {
+	if (countdown.active && countdown.position == 0){ // only render the Image Capture / "camera shutter"
+		renderImageCapture(renderer, window, framing);
+		return true;
+	}
+	
+	if (!renderCameraFeed(renderer, window, framing)) { // render live feed
+		// error
+		return false;
+	}
+
+	if (countdown.active && countdown.position > 0) { // overlay countdown
+		renderCountdown(renderer, window, framing);
+	} else if (countdown.active) {
+		countdown.active = false;
+	}
+}
+
+// private 
+bool Camera::renderCameraFeed(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Framing *framing) {
     Uint64 timestampNS;
     SDL_Surface *frame = SDL_AcquireCameraFrame(camera, &timestampNS);
 
@@ -173,5 +201,11 @@ bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Fra
 	}
 	return false;
 }
+
+
+bool Camera::renderImageCapture(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Framing *framing) {
+	if ()	
+}
+
 
 
