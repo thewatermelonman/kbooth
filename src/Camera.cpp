@@ -1,33 +1,29 @@
 #include "Camera.h"
-#include <iostream>
-#include <cstdio>
 #include "Kbooth.h"
+
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
-#include "chrono"
+#include <iostream>
 using namespace Kbooth;
 
 
-Camera::Camera() : countdown({.len = 3, .pace = 1000, .active = false, .position = 3, .start_time = nullptr}) {
-    texture = nullptr;
-	camera = nullptr;
+Camera::Camera() : 
+	texture(nullptr),
+	capture_texture(nullptr),
+	capture_surface(nullptr),
+	camera(nullptr) {
     cameras = SDL_GetCameras(&cameras_size);
 }
 
-Camera::~Camera() {
-	if (texture != nullptr) {
-		SDL_DestroyTexture(texture);
+void Camera::cleanup() {
+	if (capture_surface != nullptr) {
+		SDL_DestroySurface(capture_surface);
+		capture_surface = nullptr;
 	}
-    if (cameras != nullptr) {
-        SDL_free(cameras);
-    }
-    if (camera != nullptr) {
-        SDL_CloseCamera(camera);
-    }
-	std::cout << "Closing Camera Resources" << std::endl;
-}
-
-bool Camera::open(int camera_index, int format_index) {
+	if (capture_texture != nullptr) {
+		SDL_DestroyTexture(texture);
+		texture = nullptr;
+	}
 	if (texture != nullptr) { // destroy old texture
 		SDL_DestroyTexture(texture);
 		texture = nullptr;
@@ -36,10 +32,17 @@ bool Camera::open(int camera_index, int format_index) {
         SDL_CloseCamera(camera);
 		camera = nullptr;
     }
-	
     if (cameras != nullptr) {
         SDL_free(cameras);
     }
+}
+Camera::~Camera() {
+	cleanup();
+	std::cout << "Closing Camera Resources" << std::endl;
+}
+
+bool Camera::open(int camera_index, int format_index) {
+	cleanup();
     cameras = SDL_GetCameras(&cameras_size);
     if (cameras_size == 0 || cameras == nullptr) {
         std::cout << "No available Cameras" << std::endl;
@@ -115,44 +118,16 @@ const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
 	return specs_description;
 }
 
-void Camera::startCountdown() {
-	auto duration = std::chrono::system_clock::now().time_since_epoch();
-	countdown.position = countdown.len;
-	countdown.start_time = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-	countdown.active = true;
-	std::cout << "Started Countdown at time " << countdown.start_time << "ms." << std::endl;
-}
-
-bool Camera::renderFrame(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Framing *framing) {
-	if (countdown.active && countdown.position == 0){ // only render the Image Capture / "camera shutter"
-		renderImageCapture(renderer, window, framing);
-		return true;
-	}
-	
-	if (!renderCameraFeed(renderer, window, framing)) { // render live feed
-		// error
-		return false;
-	}
-
-	if (countdown.active && countdown.position > 0) { // overlay countdown
-		renderCountdown(renderer, window, framing);
-	} else if (countdown.active) {
-		countdown.active = false;
-	}
-}
-
-// private 
-bool Camera::renderCameraFeed(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Framing *framing) {
+bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing) {
     Uint64 timestampNS;
     SDL_Surface *frame = SDL_AcquireCameraFrame(camera, &timestampNS);
 
     if (frame != NULL) {
-        if (texture) {
+        if (texture != nullptr) {
             SDL_UpdateTexture(texture, NULL, frame->pixels, frame->pitch);
         } else {
 
 			std::cout << "created texture: " << std::endl;
-            //SDL_SetWindowSize(window, frame->w, frame->h); /* Resize the window to match */
             SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(frame);
             SDL_PropertiesID props = SDL_CreateProperties();
             SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, frame->format);
@@ -162,50 +137,104 @@ bool Camera::renderCameraFeed(SDL_Renderer *renderer, SDL_Window *window, Kbooth
             SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, frame->h);
             texture = SDL_CreateTextureWithProperties(renderer, props);
             SDL_DestroyProperties(props);
-            if (!texture) {
+            if (texture == NULL) {
 				std::cerr << "Couldn't create texture: " << SDL_GetError() << std::endl;
-				return true;
+				texture = nullptr;
+				return false;
             }
         }
         SDL_ReleaseCameraFrame(camera, frame);
     }
 
-	SDL_FRect d;
-	int win_w, win_h;
-	if (texture) {
-		SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-		float zoom_crop_x = texture->w * (framing->zoom - 1);
-		float zoom_crop_y = texture->h * (framing->zoom - 1);
-		float aspect_win = (float) win_w / win_h;
-		float aspect_tex = (float) texture->w / texture->h;
-		 float black_bar; 
-		float scale;
-		if (aspect_tex > aspect_win) {
-			// Texture wider than window
-			scale = (float) win_w / texture->w;
-			black_bar = (win_h - texture->h * scale) / 2.0f;
-			d.x = (framing->pos_x  - 1) * zoom_crop_x; // position offset - zoom crop
-			d.y = black_bar + (framing->pos_y * (zoom_crop_y - black_bar)) - zoom_crop_y; // black bar + position offset - zoom crop
-		} else {
-			// Texture taller than window
-			scale = (float) win_h / texture->h;
-			black_bar = (win_w - texture->w * scale) / 2.0f;
-			d.y = (framing->pos_y - 1) * zoom_crop_y; 
-			d.x = black_bar + (framing->pos_x * (zoom_crop_x - black_bar)) - zoom_crop_x;
-		} 
-		// texture size + (and push image out of frame by 2 * the zoom_crop)
-		d.w = texture->w * scale + zoom_crop_x * 2;
-		d.h = texture->h * scale + zoom_crop_y * 2;
-		
-		SDL_RenderTextureRotated(renderer, texture, NULL, &d, 0.0, NULL, framing->mirror ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+	if (!texture) return true;
+	renderTexture(renderer, texture, framing);
+	return true;
+}
+
+void Camera::releaseImage() {
+	SDL_DestroySurface(capture_surface);
+	capture_surface = nullptr;
+	if (capture_texture != nullptr) {
+		SDL_DestroyTexture(texture);
+		capture_texture = nullptr;
 	}
-	return false;
+	if (texture != nullptr) { // destroy old texture
+		SDL_DestroyTexture(texture);
+		texture = nullptr;
+	}
 }
 
+bool Camera::renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countdown *countdown) {
+	if (capture_texture == nullptr) {
+		Uint64 timestampNS;
+		if (!renderCameraFeed(renderer, framing)) return false;
+		capture_surface = SDL_RenderReadPixels(renderer, NULL); 
+		if (capture_surface == NULL) return true;
 
-bool Camera::renderImageCapture(SDL_Renderer *renderer, SDL_Window *window, Kbooth::Framing *framing) {
-	if ()	
+		SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(capture_surface);
+		SDL_PropertiesID props = SDL_CreateProperties();
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, capture_surface->format);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER, colorspace);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, SDL_TEXTUREACCESS_STREAMING);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, capture_surface->w);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, capture_surface->h);
+		capture_texture = SDL_CreateTextureWithProperties(renderer, props);
+		SDL_DestroyProperties(props);
+		if (capture_texture == NULL) {
+			std::cerr << "Couldn't create capture_texture: " << SDL_GetError() << std::endl;
+			return false;
+		}
+
+		std::cout << "created capture_texture: " << std::endl;
+    }
+
+	if (!capture_texture) return true;
+
+    SDL_UpdateTexture(capture_texture, NULL, capture_surface->pixels, capture_surface->pitch);
+	
+
+ 	Framing new_frame = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = false};
+	if (countdown->position != 0) {
+		float ms_since_zero = (float) (SDL_GetTicks() - countdown->start_time - ((countdown->len + 1) * countdown->pace));
+		float inverse_lerp = 1.0f - (ms_since_zero / (float) countdown->pace);
+		new_frame.zoom = inverse_lerp * 0.5 + 0.5;
+	}
+
+	renderTexture(renderer, capture_texture, &new_frame);
+	return true;
 }
 
+void Camera::renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing *framing) {
 
+	int win_w, win_h;
+	SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
 
+	float zoom_crop_x = texture->w * (framing->zoom - 1);
+	float zoom_crop_y = texture->h * (framing->zoom - 1);
+
+	float aspect_win = (float) win_w / win_h;
+	float aspect_tex = (float) texture->w / texture->h;
+
+	SDL_FRect d;
+	 
+	float black_bar; 
+	float scale;
+	if (aspect_tex > aspect_win) {
+		// Texture wider than window
+		scale = (float) win_w / texture->w;
+		black_bar = (win_h - texture->h * scale) / 2.0f;
+		d.x = (framing->pos_x  - 1) * zoom_crop_x; // position offset - zoom crop
+		d.y = black_bar + (framing->pos_y * (zoom_crop_y - black_bar)) - zoom_crop_y; // black bar + position offset - zoom crop
+	} else {
+		// Texture taller than window
+		scale = (float) win_h / texture->h;
+		black_bar = (win_w - texture->w * scale) / 2.0f;
+		d.y = (framing->pos_y - 1) * zoom_crop_y; 
+		d.x = black_bar + (framing->pos_x * (zoom_crop_x - black_bar)) - zoom_crop_x;
+	} 
+	// texture size + (and push image out of frame by 2 * the zoom_crop)
+	d.w = texture->w * scale + zoom_crop_x * 2;
+	d.h = texture->h * scale + zoom_crop_y * 2;
+	
+	SDL_RenderTextureRotated(renderer, texture, NULL, &d, 0.0, NULL, framing->mirror ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+}

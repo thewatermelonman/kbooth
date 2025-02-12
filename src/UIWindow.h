@@ -11,7 +11,7 @@ private:
     SDL_Window *window;
 	Kbooth::Camera *camera;
     ImFont *font_regular;
-    ImFont *font_title;
+    ImFont *font_countdown;
 	bool opened;
 	float alpha;
 
@@ -28,11 +28,13 @@ private:
 
 	// Methods
     void setStyleOptions();
+    void renderSettingsWindow();
+    void renderCountdown(Kbooth::Countdown *countdown);
 public:
     UIWindow(SDL_Window *window, SDL_Renderer *renderer,
              Kbooth::Settings *settings, Kbooth::Camera *camera);
     ~UIWindow();
     void processEvent(SDL_Event *event);
-    void render();
+    void render(Kbooth::Countdown *countdown);
 };
 #endif // IUWINDOW_H

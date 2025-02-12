@@ -11,9 +11,20 @@ namespace Kbooth
 		bool mirror;
 	};
 
+	// counts down from Countdown.len --> 0 at Countdown.pace
+	struct Countdown {
+		int len;
+		int pace;	
+	
+		bool active;
+		int position;
+		Uint64 start_time;
+	};
+
     struct Settings
     {
 		Framing Framing;
+		Countdown countdown;
 		Uint32 Capture_Button; // Button that triggers image Capture
 		int Capture_Duration; //in frames
     };
