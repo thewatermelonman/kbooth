@@ -1,11 +1,12 @@
 #include <SDL3/SDL.h>
-#include <iostream>
-#include <string>
 #include "SDL3/SDL_stdinc.h"
 #include "SimpleIni.h"
 #include "Camera.h"
 #include "Kbooth.h"
 #include "UIWindow.h"
+
+#include <iostream>
+#include <string>
 
 using namespace Kbooth;
 
@@ -83,25 +84,26 @@ void load_settings_config() {
 		},
 		.countdown =  {
 			.len = 3,
-			.pace = 1000,
+			.pace = 1500,
 			.active = false,
 			.position = 0,
 			.start_time = 0
 		},
 		.Capture_Button = SDLK_SPACE, 
 		.Capture_Duration = 60, 
+		.output_folder = "images"
 	};
-
-    if (ini.LoadFile("assets/settings/config.ini") < 0) {
+    if (ini.LoadFile("../assets/settings/config.ini") < 0) { // assuming run from build directory
  		std::cout << "NO SETTINGS FILE FOUND. RUNNING WITH DEFAULT."<< std::endl;
 	} else {
-		std::cout << ini.GetValue("config", "PrintSize", "a6") << std::endl;
-		WINDOW_WIDTH = (int)ini.GetLongValue("config", "WindowWidth", 1900);
-		WINDOW_HEIGHT = (int)ini.GetLongValue("config", "WindowHeight", 1080);
+		WINDOW_WIDTH = (int)ini.GetLongValue("config", "WindowWidth", 1900 / 2);
+		WINDOW_HEIGHT = (int)ini.GetLongValue("config", "WindowHeight", 1080 / 2);
 		settings.Framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
 		settings.Capture_Button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
-		std::cout << settings.Capture_Button << " - " << SDLK_SPACE << std::endl;
+		settings.save_images = ini.GetBoolValue("config", "SaveImage", true, NULL);
 	}
+	bool created_output_folder_dir = createDirectory(settings.output_folder.c_str());
+	assert(created_output_folder_dir);
 }
 
 void handle_user_input(UIWindow *ui) {
@@ -143,8 +145,8 @@ void countdown_update(Camera *camera) {
 	if (settings.countdown.position < -1) {
 		settings.countdown.active = false;
 		settings.countdown.position = settings.countdown.len;
-		camera->saveImage();
-		std::cout << "  --  COUNTDOWN  END --  " << std::endl;
+		camera->saveImage(settings.output_folder);
+		std::cout << "  --  COUNTDOWN  END --  " << settings.save_images << std::endl;
 	}
 }
 

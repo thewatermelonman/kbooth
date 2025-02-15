@@ -2,8 +2,8 @@
 #define CAMERA_H
 
 #include <SDL3/SDL.h>
+#include <string>
 #include "Kbooth.h"
-#include <ctime>
 namespace Kbooth {
 
     class Camera {
@@ -15,6 +15,8 @@ namespace Kbooth {
         SDL_Texture *capture_texture;
 		SDL_Surface *capture_surface;
 
+		int image_count;
+
 		void cleanup(); // closes all resources
 		void renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing *framing);
     public:
@@ -23,7 +25,7 @@ namespace Kbooth {
 
         bool open(int device, int format_index);
 
-		void saveImage();
+		void saveImage(std::string &output_folder);
 
 		// renders the process of capturing an image
 		bool renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countdown *countdown);

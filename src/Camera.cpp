@@ -5,6 +5,11 @@
 #include "SDL3/SDL_surface.h"
 #include "SDL3_image/SDL_image.h"
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <ctime>
+#include <iomanip>
+
 using namespace Kbooth;
 
 
@@ -12,7 +17,8 @@ Camera::Camera() :
 	texture(nullptr),
 	capture_texture(nullptr),
 	capture_surface(nullptr),
-	camera(nullptr) {
+	camera(nullptr),
+	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
 }
 
@@ -113,7 +119,6 @@ const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
 		   specs[i]->width, specs[i]->height,
 		    (0.0f + specs[i]->framerate_numerator) / specs[i]->framerate_denominator, specs[i]->colorspace);
 		specs_description[i] = description;
-		std::cout << description << i << " from " << *formats_size << std::endl;
 	}
 	SDL_free(specs);
 	return specs_description;
@@ -151,10 +156,18 @@ bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing) {
 	renderTexture(renderer, texture, framing);
 	return true;
 }
+std::string getDate() {
+	std::time_t t = std::time(nullptr);
+	std::tm tm = *std::localtime(&t);
+	std::stringstream ss;	
+	ss << std::put_time(&tm, "%d_%m_%Y");
+	return ss.str();
+}
 
-void Camera::saveImage() {
+void Camera::saveImage(std::string &output_folder) {
 	if (capture_texture != nullptr) {
-		IMG_SaveJPG(capture_surface, "test.jpg", 60);
+		std::string filename = output_folder + "/" + getDate() + "_" + std::to_string(++image_count) + ".jpg";
+		IMG_SaveJPG(capture_surface, filename.c_str(), 60);
 	}
 	SDL_DestroySurface(capture_surface);
 	capture_surface = nullptr;
@@ -172,7 +185,29 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countd
 	if (capture_texture == nullptr) {
 		Uint64 timestampNS;
 		if (!renderCameraFeed(renderer, framing)) return false;
-		capture_surface = SDL_RenderReadPixels(renderer, NULL); 
+		int win_w, win_h;
+		SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+		float aspect_win = (float) win_w / win_h;
+		float aspect_tex = (float) texture->w / texture->h;
+		float black_bar; 
+		float scale;
+		SDL_Rect r;
+		if (aspect_tex > aspect_win) {
+			scale = (float) win_w / texture->w;
+			black_bar = (win_h - texture->h * scale) / 2.0f;
+			r.y = black_bar;	
+			r.h = win_h - (black_bar * 2);	
+			r.x = 0;
+			r.w = win_w;
+		} else {
+			scale = (float) win_h / texture->h;
+			black_bar = (win_w - texture->w * scale) / 2.0f;
+			r.x = black_bar;	
+			r.w = win_w - (black_bar * 2);	
+			r.y = 0;
+			r.h = win_h;
+		} 
+		capture_surface = SDL_RenderReadPixels(renderer, &r);
 		if (capture_surface == NULL) return true;
 
 		SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(capture_surface);
@@ -197,13 +232,11 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countd
     SDL_UpdateTexture(capture_texture, NULL, capture_surface->pixels, capture_surface->pitch);
 	
 
- 	Framing new_frame = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = false};
-	if (countdown->position != 0) {
-		float ms_since_zero = (float) (SDL_GetTicks() - countdown->start_time - ((countdown->len + 1) * countdown->pace));
-		float inverse_lerp = 1.0f - (ms_since_zero / (float) countdown->pace);
-		new_frame.zoom = inverse_lerp * 0.5 + 0.5;
-	}
-
+ 	Framing new_frame = {.zoom = 0.8, .pos_x = 0.0, .pos_y = 0.0, .mirror = false};
+	float ms_since_zero = (float) (SDL_GetTicks() - countdown->start_time - ((countdown->len) * countdown->pace));
+	float inverse_lerp = 1.0f - (ms_since_zero / (float) countdown->pace);
+	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7);
+	new_frame.pos_y = -1.0f + inverse_lerp * 2;
 	renderTexture(renderer, capture_texture, &new_frame);
 	return true;
 }
