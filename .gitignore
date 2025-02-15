@@ -5,4 +5,5 @@ imgui.ini
 trash/
 compile_commands.json
 .cache/
-
+images/
+old_commands.json
