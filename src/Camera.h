@@ -23,7 +23,7 @@ namespace Kbooth {
 
         bool open(int device, int format_index);
 
-		void releaseImage();
+		void saveImage();
 
 		// renders the process of capturing an image
 		bool renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countdown *countdown);

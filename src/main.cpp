@@ -25,6 +25,7 @@ Settings settings;
 bool window_should_close = false;
 
 int main() {
+	std::cout << "STARTING >> KBOOTH <<" << std::endl;
 	load_settings_config();
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
@@ -142,7 +143,7 @@ void countdown_update(Camera *camera) {
 	if (settings.countdown.position < -1) {
 		settings.countdown.active = false;
 		settings.countdown.position = settings.countdown.len;
-		camera->releaseImage();
+		camera->saveImage();
 		std::cout << "  --  COUNTDOWN  END --  " << std::endl;
 	}
 }

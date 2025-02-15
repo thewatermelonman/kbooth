@@ -3,6 +3,7 @@
 
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
+#include "SDL3_image/SDL_image.h"
 #include <iostream>
 using namespace Kbooth;
 
@@ -151,7 +152,10 @@ bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing) {
 	return true;
 }
 
-void Camera::releaseImage() {
+void Camera::saveImage() {
+	if (capture_texture != nullptr) {
+		IMG_SaveJPG(capture_surface, "test.jpg", 60);
+	}
 	SDL_DestroySurface(capture_surface);
 	capture_surface = nullptr;
 	if (capture_texture != nullptr) {

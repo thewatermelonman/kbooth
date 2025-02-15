@@ -1,0 +1,62 @@
+[
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\src\\Camera.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\src\\Camera.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\src\\Camera.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\src\\Camera.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\src\\main.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\src\\main.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\src\\main.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\src\\main.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\src\\UIWindow.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\src\\UIWindow.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\src\\UIWindow.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\src\\UIWindow.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_demo.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_demo.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_demo.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_demo.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_draw.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_draw.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_draw.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_draw.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_tables.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_tables.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_tables.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_tables.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_widgets.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_widgets.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_widgets.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_widgets.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_impl_sdlrenderer3.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_impl_sdlrenderer3.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_impl_sdlrenderer3.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_impl_sdlrenderer3.cpp.obj"
+},
+{
+  "directory": "C:/Users/zwick/Documents/HOME/Code/C/kbooth/build",
+  "command": "g++.exe -IC:/Users/zwick/Documents/HOME/Code/C/kbooth/lib/imgui -I\"C:/Program Files (x86)/SDL3/include\" -o CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_impl_sdl3.cpp.obj -c C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_impl_sdl3.cpp",
+  "file": "C:\\Users\\zwick\\Documents\\HOME\\Code\\C\\kbooth\\lib\\imgui\\imgui_impl_sdl3.cpp",
+  "output": "CMakeFiles\\kbooth.dir\\lib\\imgui\\imgui_impl_sdl3.cpp.obj"
+}
+]
