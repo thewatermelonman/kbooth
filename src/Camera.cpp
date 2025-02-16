@@ -1,17 +1,16 @@
 #include "Camera.h"
 #include "Kbooth.h"
+#include "Printer.h"
 
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
 #include "SDL3_image/SDL_image.h"
+#include "libdither.h"
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <ctime>
-#include <iomanip>
 
 using namespace Kbooth;
-
 
 Camera::Camera() : 
 	texture(nullptr),
@@ -156,21 +155,49 @@ bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing) {
 	renderTexture(renderer, texture, framing);
 	return true;
 }
-std::string getDate() {
-	std::time_t t = std::time(nullptr);
-	std::tm tm = *std::localtime(&t);
-	std::stringstream ss;	
-	ss << std::put_time(&tm, "%d_%m_%Y");
-	return ss.str();
-}
 
-void Camera::saveImage(std::string &output_folder) {
-	if (capture_texture != nullptr) {
+void Camera::saveAndPrintImage(Printer *printer, std::string &output_folder, bool save, float brightness, float contrast) {
+	if (capture_surface != nullptr) {
 		std::string filename = output_folder + "/" + getDate() + "_" + std::to_string(++image_count) + ".jpg";
-		IMG_SaveJPG(capture_surface, filename.c_str(), 60);
+		float scale = 576.0f / (float) capture_surface->w;
+		SDL_Surface *scaled_surface = SDL_ScaleSurface(capture_surface, 576, (int) ( (capture_surface->h) * scale), SDL_SCALEMODE_LINEAR);
+		std::cout << "From: " << capture_surface->w << " x " << capture_surface->h << " - To: " << scaled_surface->w << " x " << scaled_surface->h << std::endl;
+		int w, h;
+		w = scaled_surface->w;
+		h = scaled_surface->h;
+		Uint8 r, g, b;
+    	DitherImage* dither_image = DitherImage_new(w, h);
+		for (int x = 0; x < w; x++) {
+			for (int y = 0; y < h; y++) {
+				SDL_ReadSurfacePixel(scaled_surface, x, y, &r, &g, &b, NULL);
+				r = (int) std::min(255.0f, brightness + contrast + (float) r * ((255.0f - contrast)/255.0f));
+				g = (int) std::min(255.0f, brightness + contrast + (float) g * ((255.0f - contrast)/255.0f));
+				b = (int) std::min(255.0f, brightness + contrast + (float) b * ((255.0f - contrast)/255.0f));
+        		DitherImage_set_pixel(dither_image, x, y, r, g, b, true);
+			}
+		}
+        uint8_t *out_image = (uint8_t*)calloc(w * h, sizeof(uint8_t));
+        ErrorDiffusionMatrix *em = get_shiaufan3_matrix();
+		//error_diffusion_dither(dither_image, em, false, 0.0, out_image);
+        dbs_dither(dither_image, 3, out_image);
+		printer->printDitheredImage(out_image, w, h);
+		for (int x = 0; x < w; x++) {
+			for (int y = 0; y < h; y++) {
+				Uint8 f = out_image[x + y * w] == 0xff ? 255 : 0;
+				SDL_WriteSurfacePixel(scaled_surface, x, y, f, f, f, 255);
+			}
+		}
+		if (save) {
+			IMG_SaveJPG(scaled_surface, filename.c_str(), 100);
+			filename += ".dith";
+			IMG_SaveJPG(capture_surface, filename.c_str(), 100);
+		}
+        ErrorDiffusionMatrix_free(em);
+    	free(out_image);
+		SDL_DestroySurface(scaled_surface);
+		SDL_DestroySurface(capture_surface);
+		capture_surface = nullptr;
 	}
-	SDL_DestroySurface(capture_surface);
-	capture_surface = nullptr;
 	if (capture_texture != nullptr) {
 		SDL_DestroyTexture(texture);
 		capture_texture = nullptr;
@@ -192,21 +219,26 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countd
 		float black_bar; 
 		float scale;
 		SDL_Rect r;
+		float zoom_crop_x = texture->w * (framing->zoom - 1);
+		float zoom_crop_y = texture->h * (framing->zoom - 1);
+		float pos_offset;
 		if (aspect_tex > aspect_win) {
+			// Texture wider than window
 			scale = (float) win_w / texture->w;
 			black_bar = (win_h - texture->h * scale) / 2.0f;
-			r.y = black_bar;	
-			r.h = win_h - (black_bar * 2);	
 			r.x = 0;
-			r.w = win_w;
+			r.y = (int) std::max(0.0f, black_bar + (framing->pos_y * (zoom_crop_y - black_bar)) - zoom_crop_y); // black bar + position offset - zoom crop
 		} else {
+			// Texture taller than window
 			scale = (float) win_h / texture->h;
 			black_bar = (win_w - texture->w * scale) / 2.0f;
-			r.x = black_bar;	
-			r.w = win_w - (black_bar * 2);	
 			r.y = 0;
-			r.h = win_h;
+			r.x = (int) std::max(0.0f, black_bar + (framing->pos_x * (zoom_crop_x - black_bar)) - zoom_crop_x);
 		} 
+		// texture size + (and push image out of frame by 2 * the zoom_crop)
+		r.w = (int) std::min(texture->w * scale + zoom_crop_x * 2, (float) win_w);
+		r.h = (int) std::min(texture->h * scale + zoom_crop_y * 2, (float) win_h);
+
 		capture_surface = SDL_RenderReadPixels(renderer, &r);
 		if (capture_surface == NULL) return true;
 

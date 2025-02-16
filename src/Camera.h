@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 #include <string>
 #include "Kbooth.h"
+#include "Printer.h"
 namespace Kbooth {
 
     class Camera {
@@ -25,7 +26,7 @@ namespace Kbooth {
 
         bool open(int device, int format_index);
 
-		void saveImage(std::string &output_folder);
+		void saveAndPrintImage(Printer *printer, std::string &output_folder, bool save, float brightness, float contrast);
 
 		// renders the process of capturing an image
 		bool renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countdown *countdown);

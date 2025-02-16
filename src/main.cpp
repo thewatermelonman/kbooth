@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "Kbooth.h"
 #include "UIWindow.h"
+#include "Printer.h"
 
 #include <iostream>
 #include <string>
@@ -23,11 +24,14 @@ int WINDOW_HEIGHT;
 SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 Settings settings;
+Printer printer;
 bool window_should_close = false;
 
 int main() {
 	std::cout << "STARTING >> KBOOTH <<" << std::endl;
 	load_settings_config();
+
+	if (!printer.init(settings.printer_usb_port)) return 1;
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
@@ -91,7 +95,10 @@ void load_settings_config() {
 		},
 		.Capture_Button = SDLK_SPACE, 
 		.Capture_Duration = 60, 
-		.output_folder = "images"
+		.output_folder = "images",
+		.printer_usb_port = 7,
+		.image_brightness = 40.0,
+		.image_contrast = 110.0
 	};
     if (ini.LoadFile("../assets/settings/config.ini") < 0) { // assuming run from build directory
  		std::cout << "NO SETTINGS FILE FOUND. RUNNING WITH DEFAULT."<< std::endl;
@@ -101,6 +108,7 @@ void load_settings_config() {
 		settings.Framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
 		settings.Capture_Button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
 		settings.save_images = ini.GetBoolValue("config", "SaveImage", true, NULL);
+		settings.printer_usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
 	}
 	bool created_output_folder_dir = createDirectory(settings.output_folder.c_str());
 	assert(created_output_folder_dir);
@@ -145,7 +153,7 @@ void countdown_update(Camera *camera) {
 	if (settings.countdown.position < -1) {
 		settings.countdown.active = false;
 		settings.countdown.position = settings.countdown.len;
-		camera->saveImage(settings.output_folder);
+		camera->saveAndPrintImage(&printer, settings.output_folder, settings.save_images, settings.image_brightness, settings.image_contrast);
 		std::cout << "  --  COUNTDOWN  END --  " << settings.save_images << std::endl;
 	}
 }

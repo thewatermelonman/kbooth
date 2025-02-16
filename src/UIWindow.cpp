@@ -41,7 +41,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 
     io.Fonts->AddFontDefault();
 
-    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 28.0f);
+    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 18.0f);
     font_countdown = io.Fonts->AddFontFromFileTTF("../assets/fonts/font.ttf", 200.0f);
     IM_ASSERT(font_regular != nullptr);
 }
@@ -145,7 +145,11 @@ void UIWindow::renderSettingsWindow() {
 	ImGui::VSliderFloat("Y-Scroll", slider_size, &settings->Framing.pos_y, -1.0f, 1.0f, "U\n \nD");
 	if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
 	
+	ImGui::SeparatorText("Image Capture and Printing");
+
 	ImGui::Checkbox("Save Images", &settings->save_images);
+	ImGui::SliderFloat("Image Brightness", &settings->image_brightness, 0.0f, 80.0f, "");
+	ImGui::SliderFloat("Image Contrast", &settings->image_contrast, 210.0f, 10.0f, "");
 
 	ImGui::SeparatorText("Extra");
 
