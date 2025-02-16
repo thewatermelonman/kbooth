@@ -41,7 +41,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 
     io.Fonts->AddFontDefault();
 
-    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 18.0f);
+    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 25.0f);
     font_countdown = io.Fonts->AddFontFromFileTTF("../assets/fonts/font.ttf", 200.0f);
     IM_ASSERT(font_regular != nullptr);
 }
@@ -98,7 +98,7 @@ void UIWindow::renderCountdown(Countdown *countdown) {
 void UIWindow::renderSettingsWindow() {
 	ImGui::PushFont(font_regular);
 	ImGui::Begin("Kbooth  |><|  Settings", &opened);
-	ImGui::SeparatorText("General");
+	ImGui::SeparatorText("Genral - IO");
 
 	bool old_camera_index = camera_index;
 	bool change = ImGui::Combo("Webcam", &camera_index, cameras, cameras_size);
@@ -118,6 +118,7 @@ void UIWindow::renderSettingsWindow() {
 	}
 
 
+	ImGui::SeparatorText("Image Framing");
 	ImGui::SliderFloat("Zoom", &settings->Framing.zoom, 1.0f, 2.0f, "%.2f X");
 
 	if (settings->Framing.zoom == 1.0) {
@@ -131,7 +132,7 @@ void UIWindow::renderSettingsWindow() {
 
 		ImGui::BeginGroup();
 	
-			ImGui::SliderFloat("X-Scroll", &settings->Framing.pos_x, 1.0f, -1.00f, "L\tR");
+			ImGui::SliderFloat("X-Pos", &settings->Framing.pos_x, 1.0f, -1.00f, "L\tR");
 
 			if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
 			ImGui::Checkbox("Mirror", &settings->Framing.mirror);
@@ -142,12 +143,14 @@ void UIWindow::renderSettingsWindow() {
 	ImGui::PopItemWidth();
 	ImGui::SameLine(0.0, width.x / 16.0f);
 	const ImVec2 slider_size(width.x / 10.0f, 100.0);
-	ImGui::VSliderFloat("Y-Scroll", slider_size, &settings->Framing.pos_y, -1.0f, 1.0f, "U\n \nD");
+	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->Framing.pos_y, -1.0f, 1.0f, "U\n \nD");
 	if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
 	
 	ImGui::SeparatorText("Image Capture and Printing");
 
 	ImGui::Checkbox("Save Images", &settings->save_images);
+	ImGui::Checkbox("Print Images", &settings->print_images);
+
 	ImGui::SliderFloat("Image Brightness", &settings->image_brightness, 0.0f, 80.0f, "");
 	ImGui::SliderFloat("Image Contrast", &settings->image_contrast, 210.0f, 10.0f, "");
 

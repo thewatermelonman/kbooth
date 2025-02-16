@@ -96,6 +96,8 @@ void load_settings_config() {
 		.Capture_Button = SDLK_SPACE, 
 		.Capture_Duration = 60, 
 		.output_folder = "images",
+		.save_images = true,
+		.print_images = true,
 		.printer_usb_port = 7,
 		.image_brightness = 40.0,
 		.image_contrast = 110.0
@@ -108,6 +110,7 @@ void load_settings_config() {
 		settings.Framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
 		settings.Capture_Button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
 		settings.save_images = ini.GetBoolValue("config", "SaveImage", true, NULL);
+		settings.print_images = ini.GetBoolValue("config", "PrintImage", true, NULL);
 		settings.printer_usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
 	}
 	bool created_output_folder_dir = createDirectory(settings.output_folder.c_str());

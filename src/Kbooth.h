@@ -33,6 +33,7 @@ namespace Kbooth
 		int Capture_Duration; //in frames
 		std::string output_folder;
 		bool save_images;
+		bool print_images;
 		int printer_usb_port;
 		float image_brightness;
 		float image_contrast;

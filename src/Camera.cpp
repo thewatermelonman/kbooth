@@ -108,15 +108,24 @@ const char ** Camera::getAvailCameraNames(int *size) {
 const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
 	SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(cameras[camera_index], formats_size);
 	const char ** specs_description = new const char*[*formats_size];
+	float framerate;
 	for (int i = 0; i < *formats_size; i++) {
-		int size = snprintf(nullptr, 0, "%dx%d %.1ffps (%d)",
-		   specs[i]->width, specs[i]->height,
-		    (0.0f + specs[i]->framerate_numerator) / specs[i]->framerate_denominator, specs[i]->colorspace);
-
+		framerate = (float) specs[i]->framerate_numerator / specs[i]->framerate_denominator;
+		int size = snprintf(nullptr, 
+					  0, 
+					 "%dx%d %.1ffps (%d)",
+					  specs[i]->width, 
+					  specs[i]->height,
+					  framerate, 
+					  specs[i]->colorspace);
 		char *const description = new char[size + 1];
-		snprintf(description, size + 1, "%dx%d %.1ffps (%d)",
-		   specs[i]->width, specs[i]->height,
-		    (0.0f + specs[i]->framerate_numerator) / specs[i]->framerate_denominator, specs[i]->colorspace);
+		snprintf(description, 
+		   size + 1, 
+		   "%dx%d %.1ffps (%d)", 
+		   specs[i]->width, 
+		   specs[i]->height, 
+		   framerate, 
+		   specs[i]->colorspace);
 		specs_description[i] = description;
 	}
 	SDL_free(specs);
@@ -159,9 +168,9 @@ bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing) {
 void Camera::saveAndPrintImage(Printer *printer, std::string &output_folder, bool save, float brightness, float contrast) {
 	if (capture_surface != nullptr) {
 		std::string filename = output_folder + "/" + getDate() + "_" + std::to_string(++image_count) + ".jpg";
-		float scale = 576.0f / (float) capture_surface->w;
-		SDL_Surface *scaled_surface = SDL_ScaleSurface(capture_surface, 576, (int) ( (capture_surface->h) * scale), SDL_SCALEMODE_LINEAR);
-		std::cout << "From: " << capture_surface->w << " x " << capture_surface->h << " - To: " << scaled_surface->w << " x " << scaled_surface->h << std::endl;
+		int max_width = 576;
+		float scaled_height = (float) capture_surface->h * max_width / (float) capture_surface->w;
+		SDL_Surface *scaled_surface = SDL_ScaleSurface(capture_surface, max_width, (int) scaled_height, SDL_SCALEMODE_LINEAR);
 		int w, h;
 		w = scaled_surface->w;
 		h = scaled_surface->h;
@@ -221,19 +230,18 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countd
 		SDL_Rect r;
 		float zoom_crop_x = texture->w * (framing->zoom - 1);
 		float zoom_crop_y = texture->h * (framing->zoom - 1);
-		float pos_offset;
-		if (aspect_tex > aspect_win) {
+		if (aspect_tex > aspect_win) { //TODO: REFACTOR
 			// Texture wider than window
 			scale = (float) win_w / texture->w;
 			black_bar = (win_h - texture->h * scale) / 2.0f;
 			r.x = 0;
-			r.y = (int) std::max(0.0f, black_bar + (framing->pos_y * (zoom_crop_y - black_bar)) - zoom_crop_y); // black bar + position offset - zoom crop
+			r.y = (int) std::max(0.0f, black_bar - (framing->pos_y * (black_bar - zoom_crop_y)) - zoom_crop_y); // black bar + position offset - zoom crop
 		} else {
 			// Texture taller than window
 			scale = (float) win_h / texture->h;
 			black_bar = (win_w - texture->w * scale) / 2.0f;
 			r.y = 0;
-			r.x = (int) std::max(0.0f, black_bar + (framing->pos_x * (zoom_crop_x - black_bar)) - zoom_crop_x);
+			r.x = (int) std::max(0.0f, black_bar - (framing->pos_x * (black_bar - zoom_crop_x)) - zoom_crop_x);
 		} 
 		// texture size + (and push image out of frame by 2 * the zoom_crop)
 		r.w = (int) std::min(texture->w * scale + zoom_crop_x * 2, (float) win_w);
@@ -263,11 +271,11 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countd
 
     SDL_UpdateTexture(capture_texture, NULL, capture_surface->pixels, capture_surface->pitch);
 	
-
+	// Animate Image Capture
  	Framing new_frame = {.zoom = 0.8, .pos_x = 0.0, .pos_y = 0.0, .mirror = false};
 	float ms_since_zero = (float) (SDL_GetTicks() - countdown->start_time - ((countdown->len) * countdown->pace));
 	float inverse_lerp = 1.0f - (ms_since_zero / (float) countdown->pace);
-	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7);
+	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
 	new_frame.pos_y = -1.0f + inverse_lerp * 2;
 	renderTexture(renderer, capture_texture, &new_frame);
 	return true;
@@ -288,18 +296,18 @@ void Camera::renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing
 	 
 	float black_bar; 
 	float scale;
-	if (aspect_tex > aspect_win) {
+	if (aspect_tex > aspect_win) {//TODO: REFACTOR
 		// Texture wider than window
 		scale = (float) win_w / texture->w;
 		black_bar = (win_h - texture->h * scale) / 2.0f;
 		d.x = (framing->pos_x  - 1) * zoom_crop_x; // position offset - zoom crop
-		d.y = black_bar + (framing->pos_y * (zoom_crop_y - black_bar)) - zoom_crop_y; // black bar + position offset - zoom crop
+		d.y = black_bar - (framing->pos_y * (black_bar - zoom_crop_y)) - zoom_crop_y; // black bar + position offset - zoom crop
 	} else {
 		// Texture taller than window
 		scale = (float) win_h / texture->h;
 		black_bar = (win_w - texture->w * scale) / 2.0f;
 		d.y = (framing->pos_y - 1) * zoom_crop_y; 
-		d.x = black_bar + (framing->pos_x * (zoom_crop_x - black_bar)) - zoom_crop_x;
+		d.x = black_bar - (framing->pos_x * (black_bar - zoom_crop_x)) - zoom_crop_x;
 	} 
 	// texture size + (and push image out of frame by 2 * the zoom_crop)
 	d.w = texture->w * scale + zoom_crop_x * 2;
