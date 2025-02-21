@@ -31,7 +31,9 @@ int main() {
 	std::cout << "STARTING >> KBOOTH <<" << std::endl;
 	load_settings_config();
    
-	if (!printer.init(settings.printing.usb_port)) return 1;
+	if (settings.printing.print_images && !printer.init(settings.printing.usb_port)) {
+		return 1;
+	}
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
@@ -47,6 +49,8 @@ int main() {
         if (!camera.open(0, -1)) {
         	EXIT_WITH_ERROR("Could not open Default Camera.");
         }
+		const char *res = SDL_GetCameraDriver(0);
+		std::cout << "DRIVER: " << res << std::endl;
     	UIWindow ui = UIWindow(window, renderer, &settings, &camera);
         while (!window_should_close) {
 
@@ -112,8 +116,8 @@ void load_settings_config() {
 		WINDOW_HEIGHT = (int)ini.GetLongValue("config", "WindowHeight", 1080 / 2);
 		settings.framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
 		settings.capture_button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
-		settings.printing.save_images = ini.GetBoolValue("config", "SaveImage", true, NULL);
-		settings.printing.print_images = ini.GetBoolValue("config", "PrintImage", true, NULL);
+		settings.printing.save_images = ini.GetBoolValue("config", "SaveImages", true, NULL);
+		settings.printing.print_images = ini.GetBoolValue("config", "PrintImages", true, NULL);
 		settings.printing.usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
 	}
 	bool created_output_folder_dir = createDirectory(settings.printing.save_folder.c_str());

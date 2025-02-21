@@ -31,17 +31,43 @@ static std::vector<std::vector<bool>> loadImage(std::string filename){
 
 bool Printer::init(int port) {
 	libusb_context *ctx = NULL;
+	handle = nullptr;
 	int err = libusb_init(&ctx);
+	unsigned char string[256];
+	struct libusb_device_descriptor desc;
     if (err) {
 		std::cerr << "libusb initialization failed\n" << std::endl;
         return false;
     }
+	std::cout << "Initialized libusb" << std::endl;
 	ssize_t count = libusb_get_device_list(NULL, &device_list);	
 	libusb_device *printer = nullptr;
 	for (int i = 0; i < count; i++) {
 		int dev_port = (int) libusb_get_port_number(device_list[i]);
-		if (dev_port == port) {
-			printer = device_list[i];
+		if (handle == nullptr) libusb_open(device_list[i], &handle);
+
+		if (handle != nullptr) {
+			int ret = libusb_get_device_descriptor(device_list[i], &desc);
+			if (ret < 0) {
+				fprintf(stderr, "failed to get device descriptor");
+				return false;
+			}
+			if (desc.iManufacturer) {
+				int ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, string, sizeof(string));
+				if (ret > 0)
+					printf("  Manufacturer:              %s\n", (char *)string);
+			}
+			if (desc.iProduct) {
+				int ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, string, sizeof(string));
+				if (ret > 0)
+					printf("  Product:                   %s\n", (char *)string);
+			}
+			libusb_close(handle);
+			handle = nullptr;
+			if (dev_port == port) {
+				printer = device_list[i];
+				//break;
+			}
 		}
 	}
 	if (printer == nullptr) {
@@ -54,6 +80,8 @@ bool Printer::init(int port) {
 		libusb_free_device_list(device_list, 0);
 		return false;
 	}
+	std::cout << "OPENED PRINTER" << std::endl;
+
 
 	if (libusb_kernel_driver_active(handle, 0)) {
 		libusb_detach_kernel_driver(handle, 0);
