@@ -2,7 +2,6 @@
 #define CAMERA_H
 
 #include <SDL3/SDL.h>
-#include <string>
 #include "Kbooth.h"
 #include "Printer.h"
 namespace Kbooth {
@@ -26,10 +25,10 @@ namespace Kbooth {
 
         bool open(int device, int format_index);
 
-		void saveAndPrintImage(Printer *printer, std::string &output_folder, bool save, float brightness, float contrast);
+		void saveAndPrintImage(Printer *printer, Printing *printing);
 
 		// renders the process of capturing an image
-		bool renderImageCapture(SDL_Renderer *renderer, Framing *framing, Countdown *countdown);
+		bool renderImageCapture(SDL_Renderer *renderer, Settings *settings);
         bool renderCameraFeed(SDL_Renderer *renderer, Framing* framing);
 
 		const char ** getAvailCameraNames(int *size);

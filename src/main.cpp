@@ -30,8 +30,8 @@ bool window_should_close = false;
 int main() {
 	std::cout << "STARTING >> KBOOTH <<" << std::endl;
 	load_settings_config();
-
-	if (!printer.init(settings.printer_usb_port)) return 1;
+   
+	if (!printer.init(settings.printing.usb_port)) return 1;
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
@@ -54,9 +54,9 @@ int main() {
             SDL_SetRenderDrawColorFloat(renderer, 0.0, 0.0, 0.0, 1.0);
 
 			if (settings.countdown.active && settings.countdown.position <= 0) {
-				window_should_close = !camera.renderImageCapture(renderer, &settings.Framing, &settings.countdown);
+				window_should_close = !camera.renderImageCapture(renderer, &settings);
 			} else {
-				window_should_close = !camera.renderCameraFeed(renderer, &settings.Framing);
+				window_should_close = !camera.renderCameraFeed(renderer, &settings.framing);
 			}
 
 			if (settings.countdown.active) {
@@ -80,11 +80,12 @@ void load_settings_config() {
     CSimpleIniA ini;
     ini.SetUnicode();
 	settings = {
-		.Framing = {
+		.framing = {
 			.zoom = 1.0f,
 			.pos_x = 0.0f, 
 			.pos_y = 0.0f, 
 			.mirror = true, 
+            .rotation = 0.0f
 		},
 		.countdown =  {
 			.len = 3,
@@ -93,27 +94,29 @@ void load_settings_config() {
 			.position = 0,
 			.start_time = 0
 		},
-		.Capture_Button = SDLK_SPACE, 
-		.Capture_Duration = 60, 
-		.output_folder = "images",
-		.save_images = true,
-		.print_images = true,
-		.printer_usb_port = 7,
-		.image_brightness = 40.0,
-		.image_contrast = 110.0
+        .printing = {
+		    .save_folder = "images",
+            .save_images = true,
+            .print_images = true,
+            .usb_port = 7,
+            .brightness = 40.0,
+            .contrast = 110.0,
+            .landscape = false
+        },
+		.capture_button = SDLK_SPACE, 
 	};
     if (ini.LoadFile("../assets/settings/config.ini") < 0) { // assuming run from build directory
  		std::cout << "NO SETTINGS FILE FOUND. RUNNING WITH DEFAULT."<< std::endl;
 	} else {
 		WINDOW_WIDTH = (int)ini.GetLongValue("config", "WindowWidth", 1900 / 2);
 		WINDOW_HEIGHT = (int)ini.GetLongValue("config", "WindowHeight", 1080 / 2);
-		settings.Framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
-		settings.Capture_Button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
-		settings.save_images = ini.GetBoolValue("config", "SaveImage", true, NULL);
-		settings.print_images = ini.GetBoolValue("config", "PrintImage", true, NULL);
-		settings.printer_usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
+		settings.framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
+		settings.capture_button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
+		settings.printing.save_images = ini.GetBoolValue("config", "SaveImage", true, NULL);
+		settings.printing.print_images = ini.GetBoolValue("config", "PrintImage", true, NULL);
+		settings.printing.usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
 	}
-	bool created_output_folder_dir = createDirectory(settings.output_folder.c_str());
+	bool created_output_folder_dir = createDirectory(settings.printing.save_folder.c_str());
 	assert(created_output_folder_dir);
 }
 
@@ -136,7 +139,7 @@ void handle_user_input(UIWindow *ui) {
 			if (!SDL_SetWindowFullscreen(window, FULLSCREEN)) window_should_close = true;
 
 		// Capture Image
-		} else if(event.key.key == settings.Capture_Button && !settings.countdown.active) { 
+		} else if(event.key.key == settings.capture_button && !settings.countdown.active) { 
 			countdown_start();
 		} else if (event.key.key == SDLK_ESCAPE) {
 			window_should_close = true;
@@ -156,8 +159,8 @@ void countdown_update(Camera *camera) {
 	if (settings.countdown.position < -1) {
 		settings.countdown.active = false;
 		settings.countdown.position = settings.countdown.len;
-		camera->saveAndPrintImage(&printer, settings.output_folder, settings.save_images, settings.image_brightness, settings.image_contrast);
-		std::cout << "  --  COUNTDOWN  END --  " << settings.save_images << std::endl;
+		camera->saveAndPrintImage(&printer, &settings.printing);
+		std::cout << "  --  COUNTDOWN  END --  " << std::endl;
 	}
 }
 

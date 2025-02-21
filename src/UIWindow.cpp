@@ -104,7 +104,7 @@ void UIWindow::renderSettingsWindow() {
 	bool change = ImGui::Combo("Webcam", &camera_index, cameras, cameras_size);
 	if (change && old_camera_index != camera_index) {
 		camera->open(camera_index, format_index);
-		settings->Framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+		settings->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
 		format_index = -1;
 		free_formats(formats, formats_size);
 		formats = camera->getAvailFormatNames(camera_index, &formats_size);
@@ -114,16 +114,16 @@ void UIWindow::renderSettingsWindow() {
 	change = ImGui::Combo("Webcam Format", &format_index, formats, formats_size);
 	if (change && old_format_index != format_index) {
 		camera->open(camera_index, format_index);
-		settings->Framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+		settings->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
 	}
 
 
 	ImGui::SeparatorText("Image Framing");
-	ImGui::SliderFloat("Zoom", &settings->Framing.zoom, 1.0f, 2.0f, "%.2f X");
-
-	if (settings->Framing.zoom == 1.0) {
-		settings->Framing.pos_x = 0.0;
-		settings->Framing.pos_y = 0.0;
+	ImGui::SliderFloat("Zoom", &settings->framing.zoom, 1.0f, 2.0f, "%.2f X");
+	ImGui::SliderFloat("Rotation", &settings->framing.rotation, 0.0f, 360.0f, "%.1f");
+	if (settings->framing.zoom == 1.0) {
+		settings->framing.pos_x = 0.0;
+		settings->framing.pos_y = 0.0;
 		ImGui::BeginDisabled();
 	}
 	ImVec2 width = ImGui::GetContentRegionAvail();
@@ -132,27 +132,31 @@ void UIWindow::renderSettingsWindow() {
 
 		ImGui::BeginGroup();
 	
-			ImGui::SliderFloat("X-Pos", &settings->Framing.pos_x, 1.0f, -1.00f, "L\tR");
+			ImGui::SliderFloat("X-Pos", &settings->framing.pos_x, 1.0f, -1.00f, "L\tR");
 
-			if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
-			ImGui::Checkbox("Mirror", &settings->Framing.mirror);
-			if (settings->Framing.zoom == 1.0) ImGui::BeginDisabled();
+			if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
+			ImGui::Checkbox("Mirror", &settings->framing.mirror);
+			if (settings->framing.zoom == 1.0) ImGui::BeginDisabled();
 
 		ImGui::EndGroup();
 
 	ImGui::PopItemWidth();
 	ImGui::SameLine(0.0, width.x / 16.0f);
 	const ImVec2 slider_size(width.x / 10.0f, 100.0);
-	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->Framing.pos_y, -1.0f, 1.0f, "U\n \nD");
-	if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
+	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->framing.pos_y, -1.0f, 1.0f, "U\n \nD");
+	if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
+
 	
-	ImGui::SeparatorText("Image Capture and Printing");
+	ImGui::SeparatorText("Printing");
 
-	ImGui::Checkbox("Save Images", &settings->save_images);
-	ImGui::Checkbox("Print Images", &settings->print_images);
+	ImGui::Checkbox("Save Images", &settings->printing.save_images);
+	ImGui::Checkbox("Print Images", &settings->printing.print_images);
 
-	ImGui::SliderFloat("Image Brightness", &settings->image_brightness, 0.0f, 80.0f, "");
-	ImGui::SliderFloat("Image Contrast", &settings->image_contrast, 210.0f, 10.0f, "");
+    if (ImGui::RadioButton("Landscape", settings->printing.landscape)) { settings->printing.landscape = true; } ImGui::SameLine();
+    if (ImGui::RadioButton("Portrait", !settings->printing.landscape)) { settings->printing.landscape = false; }
+
+	ImGui::SliderFloat("Image Brightness", &settings->printing.brightness, 20.0f, 60.0f, "");
+	ImGui::SliderFloat("Image Contrast", &settings->printing.contrast, 190.0f, 30.0f, "");
 
 	ImGui::SeparatorText("Extra");
 
