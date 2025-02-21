@@ -101,7 +101,7 @@ void load_settings_config() {
             .usb_port = 7,
             .brightness = 40.0,
             .contrast = 110.0,
-            .landscape = false
+            .landscape = true
         },
 		.capture_button = SDLK_SPACE, 
 	};

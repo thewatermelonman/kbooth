@@ -146,6 +146,14 @@ void UIWindow::renderSettingsWindow() {
 	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->framing.pos_y, -1.0f, 1.0f, "U\n \nD");
 	if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
 
+    
+	ImGui::SeparatorText("Image Capture");
+    float pace = settings->countdown.pace / 1000.0;
+    if (ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 25, "%d"));
+    if (ImGui::SliderFloat("Countdown Speed", &pace, 0.8, 3.0, "%.1fsec")) {
+        settings->countdown.pace = (int) (pace * 1000);
+    }
+
 	
 	ImGui::SeparatorText("Printing");
 
