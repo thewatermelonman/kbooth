@@ -44,18 +44,20 @@ int main() {
 
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_ShowWindow(window);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     {
         Camera camera;
-        if (!camera.open(0, -1)) {
+        if (!camera.open(0, 9)) {
         	EXIT_WITH_ERROR("Could not open Default Camera.");
         }
+        camera.setAspectRatio(renderer, settings.framing.aspect_x, settings.framing.aspect_y);
 		const char *res = SDL_GetCameraDriver(0);
 		std::cout << "DRIVER: " << res << std::endl;
     	UIWindow ui = UIWindow(window, renderer, &settings, &camera);
         while (!window_should_close) {
 
-            SDL_RenderClear(renderer);
             SDL_SetRenderDrawColorFloat(renderer, 0.0, 0.0, 0.0, 1.0);
+            SDL_RenderClear(renderer);
 
 			if (settings.countdown.active && settings.countdown.position <= 0) {
 				window_should_close = !camera.renderImageCapture(renderer, &settings);
@@ -88,6 +90,8 @@ void load_settings_config() {
 			.zoom = 1.0f,
 			.pos_x = 0.0f, 
 			.pos_y = 0.0f, 
+            .aspect_x = 1,
+            .aspect_y = 1,
 			.mirror = true, 
             .rotation = 0.0f
 		},
@@ -103,8 +107,8 @@ void load_settings_config() {
             .save_images = true,
             .print_images = true,
             .usb_port = 7,
-            .brightness = 40.0,
-            .contrast = 110.0,
+            .brightness = 30.0,
+            .contrast = 100.0,
             .landscape = true
         },
 		.capture_button = SDLK_SPACE, 
@@ -115,10 +119,14 @@ void load_settings_config() {
 		WINDOW_WIDTH = (int)ini.GetLongValue("config", "WindowWidth", 1900 / 2);
 		WINDOW_HEIGHT = (int)ini.GetLongValue("config", "WindowHeight", 1080 / 2);
 		settings.framing.mirror =(bool)ini.GetBoolValue("config", "MirrorH", true, NULL);
+		settings.framing.aspect_x = (int) ini.GetLongValue("config", "aspectX", 16);
+		settings.framing.aspect_y = (int) ini.GetLongValue("config", "aspectY", 9);
 		settings.capture_button = (Uint32) ini.GetLongValue("config", "CaptureButton", SDLK_SPACE);
 		settings.printing.save_images = ini.GetBoolValue("config", "SaveImages", true, NULL);
 		settings.printing.print_images = ini.GetBoolValue("config", "PrintImages", true, NULL);
 		settings.printing.usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
+		settings.countdown.len = (int) ini.GetLongValue("config", "CountdownLen", 3);
+		settings.countdown.pace = (int) ini.GetLongValue("config", "CountdownPace", 1500);
 	}
 	bool created_output_folder_dir = createDirectory(settings.printing.save_folder.c_str());
 	assert(created_output_folder_dir);

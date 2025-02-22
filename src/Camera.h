@@ -15,21 +15,28 @@ namespace Kbooth {
         SDL_Texture *capture_texture;
 		SDL_Surface *capture_surface;
 
+        // frame and black bars that crop to image capture 1:1, 4:3, 16:9, etc.
+        SDL_Rect frame;
+        SDL_FRect framing_bar_start;
+        SDL_FRect framing_bar_end;
+
 		int image_count;
 
 		void cleanup(); // closes all resources
-		void renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing *framing);
+		bool renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing *framing, bool renderBorder);
     public:
         Camera();
         ~Camera();
 
         bool open(int device, int format_index);
+        void setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y);
 
 		void saveAndPrintImage(Printer *printer, Printing *printing);
 
 		// renders the process of capturing an image
 		bool renderImageCapture(SDL_Renderer *renderer, Settings *settings);
         bool renderCameraFeed(SDL_Renderer *renderer, Framing* framing);
+        bool renderCameraFeed(SDL_Renderer *renderer, Framing *framing, bool renderBorder);
 
 		const char ** getAvailCameraNames(int *size);
 		const char ** getAvailFormatNames(int camera_index, int *formats_count);

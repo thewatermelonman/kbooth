@@ -55,6 +55,7 @@ bool Printer::init(int port) {
 			if (desc.iManufacturer) {
 				int ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, string, sizeof(string));
 				if (ret > 0)
+                    std::cout << "Port: " << dev_port;
 					printf("  Manufacturer:              %s\n", (char *)string);
 			}
 			if (desc.iProduct) {
@@ -66,7 +67,7 @@ bool Printer::init(int port) {
 			handle = nullptr;
 			if (dev_port == port) {
 				printer = device_list[i];
-				//break;
+				break;
 			}
 		}
 	}
@@ -75,6 +76,17 @@ bool Printer::init(int port) {
 		return false;
 	}
 	err = libusb_open(printer, &handle);
+    int ret = libusb_get_device_descriptor(printer, &desc);
+    if (ret < 0) {
+        fprintf(stderr, "failed to get device descriptor");
+        return false;
+    }
+    std::cout << "Opened Device:";
+    if (desc.iProduct) {
+		int ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, string, sizeof(string));
+        if (ret > 0) std::cout << string;
+    }
+    std::cout << std::endl;
 	if (err) {
 		std::cerr << "ERROR: could not open usb device: " << (int) err << std::endl;
 		libusb_free_device_list(device_list, 0);

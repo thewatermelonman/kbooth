@@ -5,6 +5,7 @@
 #include "imgui_impl_sdlrenderer3.h"
 
 #include <string>
+#include <algorithm>
 
 using namespace Kbooth;
 
@@ -104,7 +105,11 @@ void UIWindow::renderSettingsWindow() {
 	bool change = ImGui::Combo("Webcam", &camera_index, cameras, cameras_size);
 	if (change && old_camera_index != camera_index) {
 		camera->open(camera_index, format_index);
-		settings->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+        camera->setAspectRatio(renderer, settings->framing.aspect_x, settings->framing.aspect_y);
+		settings->framing.zoom = 1.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.mirror = true;
 		format_index = -1;
 		free_formats(formats, formats_size);
 		formats = camera->getAvailFormatNames(camera_index, &formats_size);
@@ -114,25 +119,39 @@ void UIWindow::renderSettingsWindow() {
 	change = ImGui::Combo("Webcam Format", &format_index, formats, formats_size);
 	if (change && old_format_index != format_index) {
 		camera->open(camera_index, format_index);
-		settings->framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+		settings->framing.zoom = 1.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.mirror = true;
 	}
 
 
+	ImVec2 width = ImGui::GetContentRegionAvail();
 	ImGui::SeparatorText("Image Framing");
-	ImGui::SliderFloat("Zoom", &settings->framing.zoom, 1.0f, 2.0f, "%.2f X");
+
+	ImGui::PushItemWidth(width.x / 4.0f);
+        if (ImGui::InputInt("X", &settings->framing.aspect_x, 1, 1)) {
+            settings->framing.aspect_x = std::clamp(settings->framing.aspect_x, 1, 35);
+        }
+        ImGui::SameLine();
+        if (ImGui::InputInt("Y \t Aspect Ratio", &settings->framing.aspect_y, 1, 1)) {
+            settings->framing.aspect_y = std::clamp(settings->framing.aspect_y, 1, 35);
+        }
+	ImGui::PopItemWidth();
+
+	ImGui::SliderFloat("Zoom", &settings->framing.zoom, 0.5f, 2.0f, "%.2f X");
 	ImGui::SliderFloat("Rotation", &settings->framing.rotation, 0.0f, 360.0f, "%.1f");
 	if (settings->framing.zoom == 1.0) {
 		settings->framing.pos_x = 0.0;
 		settings->framing.pos_y = 0.0;
 		ImGui::BeginDisabled();
 	}
-	ImVec2 width = ImGui::GetContentRegionAvail();
 
 	ImGui::PushItemWidth(width.x / 4.0f);
 
 		ImGui::BeginGroup();
 	
-			ImGui::SliderFloat("X-Pos", &settings->framing.pos_x, 1.0f, -1.00f, "L\tR");
+			ImGui::SliderFloat("X-Pos", &settings->framing.pos_x, -1.0f, 1.00f, "L\tR");
 
 			if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
 			ImGui::Checkbox("Mirror", &settings->framing.mirror);
@@ -143,7 +162,7 @@ void UIWindow::renderSettingsWindow() {
 	ImGui::PopItemWidth();
 	ImGui::SameLine(0.0, width.x / 16.0f);
 	const ImVec2 slider_size(width.x / 10.0f, 100.0);
-	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->framing.pos_y, -1.0f, 1.0f, "U\n \nD");
+	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->framing.pos_y, 1.0f, -1.0f, "U\n \nD");
 	if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
 
     
@@ -163,8 +182,8 @@ void UIWindow::renderSettingsWindow() {
     if (ImGui::RadioButton("Landscape", settings->printing.landscape)) { settings->printing.landscape = true; } ImGui::SameLine();
     if (ImGui::RadioButton("Portrait", !settings->printing.landscape)) { settings->printing.landscape = false; }
 
-	ImGui::SliderFloat("Image Brightness", &settings->printing.brightness, 20.0f, 60.0f, "");
-	ImGui::SliderFloat("Image Contrast", &settings->printing.contrast, 190.0f, 30.0f, "");
+	ImGui::SliderFloat("Image Brightness", &settings->printing.brightness, 20.0f, 40.0f, "");
+	ImGui::SliderFloat("Image Contrast", &settings->printing.contrast, 140.0f, 60.0f, "");
 
 	ImGui::SeparatorText("Extra");
 

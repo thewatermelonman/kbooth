@@ -12,6 +12,8 @@ namespace Kbooth
 		float zoom;
 		float pos_x;
 		float pos_y;
+		int aspect_x;
+		int aspect_y;
 		bool mirror;
         float rotation;
 	};
