@@ -2,6 +2,9 @@
 #define KBOOTH_H
 #include "SDL3/SDL_stdinc.h"
 #include <string>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 namespace Kbooth
 {
 	struct Framing
@@ -9,7 +12,10 @@ namespace Kbooth
 		float zoom;
 		float pos_x;
 		float pos_y;
+		int aspect_x;
+		int aspect_y;
 		bool mirror;
+        float rotation;
 	};
 
 	// counts down from Countdown.len --> 0 at Countdown.pace
@@ -22,14 +28,22 @@ namespace Kbooth
 		Uint64 start_time;
 	};
 
+    struct Printing {
+		std::string save_folder;
+		bool save_images;
+		bool print_images;
+		int usb_port;
+		float brightness;
+		float contrast;
+        bool landscape;
+    };
+
     struct Settings
     {
-		Framing Framing;
+		Framing framing;
 		Countdown countdown;
-		Uint32 Capture_Button; // Button that triggers image Capture
-		int Capture_Duration; //in frames
-		std::string output_folder;
-		bool save_images;
+        Printing printing;
+		Uint32 capture_button; // Button that triggers image Capture
     };
 }
 
@@ -51,6 +65,14 @@ static bool createDirectory(const char* path) {
 #else
     return mkdir(path, 0777) == 0 || errno == EEXIST;
 #endif
+}
+
+static std::string getDateAndTime() {
+	std::time_t t = std::time(nullptr);
+	std::tm tm = *std::localtime(&t);
+	std::stringstream ss;	
+	ss << std::put_time(&tm, "%d_%m_%Y_%H_%M");
+	return ss.str();
 }
 
 #endif // KBOOTH_H

@@ -5,6 +5,7 @@
 #include "imgui_impl_sdlrenderer3.h"
 
 #include <string>
+#include <algorithm>
 
 using namespace Kbooth;
 
@@ -41,7 +42,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 
     io.Fonts->AddFontDefault();
 
-    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 28.0f);
+    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 25.0f);
     font_countdown = io.Fonts->AddFontFromFileTTF("../assets/fonts/font.ttf", 200.0f);
     IM_ASSERT(font_regular != nullptr);
 }
@@ -98,13 +99,17 @@ void UIWindow::renderCountdown(Countdown *countdown) {
 void UIWindow::renderSettingsWindow() {
 	ImGui::PushFont(font_regular);
 	ImGui::Begin("Kbooth  |><|  Settings", &opened);
-	ImGui::SeparatorText("General");
+	ImGui::SeparatorText("Genral - IO");
 
 	bool old_camera_index = camera_index;
 	bool change = ImGui::Combo("Webcam", &camera_index, cameras, cameras_size);
 	if (change && old_camera_index != camera_index) {
 		camera->open(camera_index, format_index);
-		settings->Framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+        camera->setAspectRatio(renderer, settings->framing.aspect_x, settings->framing.aspect_y);
+		settings->framing.zoom = 1.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.mirror = true;
 		format_index = -1;
 		free_formats(formats, formats_size);
 		formats = camera->getAvailFormatNames(camera_index, &formats_size);
@@ -114,38 +119,71 @@ void UIWindow::renderSettingsWindow() {
 	change = ImGui::Combo("Webcam Format", &format_index, formats, formats_size);
 	if (change && old_format_index != format_index) {
 		camera->open(camera_index, format_index);
-		settings->Framing = {.zoom = 1.0, .pos_x = 0.0, .pos_y = 0.0, .mirror = true};
+		settings->framing.zoom = 1.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.pos_x = 0.0;
+		settings->framing.mirror = true;
 	}
 
 
-	ImGui::SliderFloat("Zoom", &settings->Framing.zoom, 1.0f, 2.0f, "%.2f X");
+	ImVec2 width = ImGui::GetContentRegionAvail();
+	ImGui::SeparatorText("Image Framing");
 
-	if (settings->Framing.zoom == 1.0) {
-		settings->Framing.pos_x = 0.0;
-		settings->Framing.pos_y = 0.0;
+	ImGui::PushItemWidth(width.x / 4.0f);
+        if (ImGui::InputInt("X", &settings->framing.aspect_x, 1, 1)) {
+            settings->framing.aspect_x = std::clamp(settings->framing.aspect_x, 1, 35);
+        }
+        ImGui::SameLine();
+        if (ImGui::InputInt("Y \t Aspect Ratio", &settings->framing.aspect_y, 1, 1)) {
+            settings->framing.aspect_y = std::clamp(settings->framing.aspect_y, 1, 35);
+        }
+	ImGui::PopItemWidth();
+
+	ImGui::SliderFloat("Zoom", &settings->framing.zoom, 0.5f, 2.0f, "%.2f X");
+	ImGui::SliderFloat("Rotation", &settings->framing.rotation, 0.0f, 360.0f, "%.1f");
+	if (settings->framing.zoom == 1.0) {
+		settings->framing.pos_x = 0.0;
+		settings->framing.pos_y = 0.0;
 		ImGui::BeginDisabled();
 	}
-	ImVec2 width = ImGui::GetContentRegionAvail();
 
 	ImGui::PushItemWidth(width.x / 4.0f);
 
 		ImGui::BeginGroup();
 	
-			ImGui::SliderFloat("X-Scroll", &settings->Framing.pos_x, 1.0f, -1.00f, "L\tR");
+			ImGui::SliderFloat("X-Pos", &settings->framing.pos_x, -1.0f, 1.00f, "L\tR");
 
-			if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
-			ImGui::Checkbox("Mirror", &settings->Framing.mirror);
-			if (settings->Framing.zoom == 1.0) ImGui::BeginDisabled();
+			if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
+			ImGui::Checkbox("Mirror", &settings->framing.mirror);
+			if (settings->framing.zoom == 1.0) ImGui::BeginDisabled();
 
 		ImGui::EndGroup();
 
 	ImGui::PopItemWidth();
 	ImGui::SameLine(0.0, width.x / 16.0f);
 	const ImVec2 slider_size(width.x / 10.0f, 100.0);
-	ImGui::VSliderFloat("Y-Scroll", slider_size, &settings->Framing.pos_y, -1.0f, 1.0f, "U\n \nD");
-	if (settings->Framing.zoom == 1.0) ImGui::EndDisabled();
+	ImGui::VSliderFloat("Y-Pos", slider_size, &settings->framing.pos_y, 1.0f, -1.0f, "U\n \nD");
+	if (settings->framing.zoom == 1.0) ImGui::EndDisabled();
+
+    
+	ImGui::SeparatorText("Image Capture");
+    float pace = settings->countdown.pace / 1000.0;
+    if (ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 25, "%d"));
+    if (ImGui::SliderFloat("Countdown Speed", &pace, 0.8, 3.0, "%.1fsec")) {
+        settings->countdown.pace = (int) (pace * 1000);
+    }
+
 	
-	ImGui::Checkbox("Save Images", &settings->save_images);
+	ImGui::SeparatorText("Printing");
+
+	ImGui::Checkbox("Save Images", &settings->printing.save_images);
+	ImGui::Checkbox("Print Images", &settings->printing.print_images);
+
+    if (ImGui::RadioButton("Landscape", settings->printing.landscape)) { settings->printing.landscape = true; } ImGui::SameLine();
+    if (ImGui::RadioButton("Portrait", !settings->printing.landscape)) { settings->printing.landscape = false; }
+
+	ImGui::SliderFloat("Image Brightness", &settings->printing.brightness, 20.0f, 40.0f, "");
+	ImGui::SliderFloat("Image Contrast", &settings->printing.contrast, 140.0f, 60.0f, "");
 
 	ImGui::SeparatorText("Extra");
 
