@@ -45,12 +45,10 @@ int main() {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     {
         Camera camera;
-        if (!camera.open(0, 9)) {
+        if (!camera.open(0, 0)) {
         	EXIT_WITH_ERROR("Could not open Default Camera.");
         }
         camera.setAspectRatio(renderer, settings.framing.aspect_x, settings.framing.aspect_y);
-		const char *res = SDL_GetCameraDriver(0);
-		std::cout << "DRIVER: " << res << std::endl;
     	UIWindow ui = UIWindow(window, renderer, &settings, &camera);
         while (!window_should_close) {
 

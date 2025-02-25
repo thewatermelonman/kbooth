@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 project(kbooth LANGUAGES CXX)
 
-set (CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_COMPILER "clang++")
-message(STATUS "\nCXX Include Directories: ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}\n")
+#set(CMAKE_CXX_COMPILER "clang++")
+#message(STATUS "\nCXX Include Directories: ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}\n")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(KB_SRC "src")
