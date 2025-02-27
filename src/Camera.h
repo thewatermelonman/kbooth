@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include "Kbooth.h"
 #include "Printer.h"
 namespace Kbooth {
@@ -20,6 +21,8 @@ namespace Kbooth {
         SDL_Texture *texture;
         SDL_Texture *capture_texture;
 		SDL_Surface *capture_surface;
+
+        TTF_Font *countdown_font;
 
         // frame and black bars that crop to image capture 1:1, 4:3, 16:9, etc.
         SDL_Rect frame;
@@ -42,6 +45,7 @@ namespace Kbooth {
 		void saveAndPrintImage(Printer *printer, PrintSettings *printing);
 
         bool renderFrame(SDL_Renderer *renderer, Settings *settings);
+        void renderCountdown(SDL_Renderer *renderer);
 		bool renderImageCapture(SDL_Renderer *renderer, Settings *settings);
         bool renderCameraFeed(SDL_Renderer *renderer, Framing *framing, bool renderBorder);
 

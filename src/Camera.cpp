@@ -5,6 +5,8 @@
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
 #include "SDL3_image/SDL_image.h"
+#include "SDL3_ttf/SDL_ttf.h"
+#include "SDL3_ttf/SDL_textengine.h"
 #include <iostream>
 #include <string>
 #include <ctime>
@@ -18,6 +20,7 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
+    countdown_font = TTF_OpenFont("../assets/fonts/font.ttf", 16);
 }
 
 void Camera::cleanup() {
@@ -41,6 +44,7 @@ void Camera::cleanup() {
         SDL_free(cameras);
     }
 }
+
 Camera::~Camera() {
 	cleanup();
 	std::cout << "Closing Camera Resources" << std::endl;
@@ -183,9 +187,48 @@ void Camera::setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y) 
         framing_bar_end.h = framing_bar_start.h;
 }
 
+void Camera::renderCountdown(SDL_Renderer *renderer) {
+    SDL_Color cd_color = {.r = 255, .g = 255, .b = 255, .a = 255};
+    SDL_Surface *cd_surface = TTF_RenderGlyph_Solid(
+        countdown_font, 
+        (Uint32) (48 + countdown.position), 
+        cd_color); 
+    SDL_Texture *cd_texture;
+    if (cd_surface) {
+		SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(cd_surface);
+		SDL_PropertiesID props = SDL_CreateProperties();
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, cd_surface->format);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER, colorspace);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, SDL_TEXTUREACCESS_STREAMING);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, cd_surface->w);
+		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, cd_surface->h);
+		cd_texture = SDL_CreateTextureWithProperties(renderer, props);
+		SDL_DestroyProperties(props);
+		if (cd_texture == NULL) {
+			std::cerr << "Couldn't create cd_texture: " << SDL_GetError() << std::endl;
+		}
+    } else {
+        std::cerr << "Couldn't create cd_surface: " << SDL_GetError() << std::endl;
+    }
+	std::cout << "created cd_texture: " << std::endl;
+    int win_w, win_h;
+    SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+    float relative_font_scale = 0.7f;
+    SDL_FRect d;
+    d.h = win_h * relative_font_scale;
+    d.w = win_h * (float) cd_texture->w / cd_texture->h * relative_font_scale;
+    d.x = (win_h / 2.0f) - (d.w / 2.0f);
+    d.x = (win_w / 2.0f) - (d.h / 2.0f);
+    SDL_RenderTexture(renderer, cd_texture, NULL, &d);
+}
+
 bool Camera::renderFrame(SDL_Renderer *renderer, Settings *settings) {
     if (countdown.position < 1 && countdown.active) {
         return renderImageCapture(renderer, settings);
+    } else if (countdown.active) {
+        bool res = renderCameraFeed(renderer, &settings->framing, true);
+        renderCountdown(renderer);
+        return res;
     } else {
         return renderCameraFeed(renderer, &settings->framing, true);
     }
