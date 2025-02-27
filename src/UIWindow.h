@@ -3,7 +3,6 @@
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
-#include <vector>
 #include "Kbooth.h"
 #include "Camera.h"
 class UIWindow {

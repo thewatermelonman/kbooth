@@ -51,6 +51,7 @@ Camera::~Camera() {
 }
 
 bool Camera::open(int camera_index, int format_index) {
+	countdown = {.active = false, .position = 3, .start_time = 0};
 	cleanup();
     cameras = SDL_GetCameras(&cameras_size);
     if (cameras_size == 0 || cameras == nullptr) {

@@ -4,8 +4,6 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
-#include <string>
-#include <algorithm>
 
 using namespace Kbooth;
 
@@ -21,7 +19,9 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 
 	//get available formats for the first (default) camera
 	formats = this->camera->getAvailFormatNames(camera_index, &formats_size);
-	format_index = -1;
+	format_index = 0;
+
+	// settings window
 	opened = false;
 	alpha = 0.86;
 
