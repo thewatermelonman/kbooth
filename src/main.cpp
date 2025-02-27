@@ -36,6 +36,11 @@ int main() {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
     }
+
+    if (!TTF_Init()) {
+        EXIT_WITH_ERROR("Couldn't initialise SDL_ttf");
+    }
+
     if (!SDL_CreateWindowAndRenderer("Kbooth", window_width, window_height, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         EXIT_WITH_ERROR("could not create window and renderer.");
     }

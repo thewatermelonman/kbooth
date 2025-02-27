@@ -9,6 +9,7 @@ namespace Kbooth {
 
     struct CountdownState {
 		bool active;
+        bool update;
 		int position;
 		Uint64 start_time;
     };
@@ -23,6 +24,8 @@ namespace Kbooth {
 		SDL_Surface *capture_surface;
 
         TTF_Font *countdown_font;
+        TTF_Font *countdown_border_font;
+        SDL_Texture *countdown_texture;
 
         // frame and black bars that crop to image capture 1:1, 4:3, 16:9, etc.
         SDL_Rect frame;
@@ -55,6 +58,7 @@ namespace Kbooth {
     
         void startCountdown(CountdownSettings *cd_set);
         bool updateCountdown(CountdownSettings *cd_set);
+        void createCountdownTexture(SDL_Renderer *renderer);
     };
 }
 #endif // CAMERA_H

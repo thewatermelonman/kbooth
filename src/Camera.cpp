@@ -20,7 +20,9 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
-    countdown_font = TTF_OpenFont("../assets/fonts/font.ttf", 16);
+    countdown_font = TTF_OpenFont("../assets/fonts/font.ttf", 1400);
+    countdown_border_font = TTF_OpenFont("../assets/fonts/font.ttf", 1400);
+    TTF_SetFontOutline(countdown_border_font, 3);
 }
 
 void Camera::cleanup() {
@@ -47,11 +49,12 @@ void Camera::cleanup() {
 
 Camera::~Camera() {
 	cleanup();
+    TTF_CloseFont(countdown_font);
 	std::cout << "Closing Camera Resources" << std::endl;
 }
 
 bool Camera::open(int camera_index, int format_index) {
-	countdown = {.active = false, .position = 3, .start_time = 0};
+	countdown = {.active = false, .update = true, .position = 3, .start_time = 0};
 	cleanup();
     cameras = SDL_GetCameras(&cameras_size);
     if (cameras_size == 0 || cameras == nullptr) {
@@ -188,39 +191,46 @@ void Camera::setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y) 
         framing_bar_end.h = framing_bar_start.h;
 }
 
-void Camera::renderCountdown(SDL_Renderer *renderer) {
+void Camera::createCountdownTexture(SDL_Renderer *renderer) {
     SDL_Color cd_color = {.r = 255, .g = 255, .b = 255, .a = 255};
-    SDL_Surface *cd_surface = TTF_RenderGlyph_Solid(
+    SDL_Surface *cd_surface = TTF_RenderGlyph_Blended(
         countdown_font, 
         (Uint32) (48 + countdown.position), 
         cd_color); 
-    SDL_Texture *cd_texture;
+    cd_color = {.r = 0, .g = 0, .b = 0, .a = 255};
+    SDL_Surface *cd_border_surface = TTF_RenderGlyph_Blended(
+        countdown_border_font, 
+        (Uint32) (48 + countdown.position), 
+        cd_color); 
+    SDL_BlitSurface(cd_border_surface, NULL, cd_surface, NULL);
     if (cd_surface) {
-		SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(cd_surface);
-		SDL_PropertiesID props = SDL_CreateProperties();
-		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, cd_surface->format);
-		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER, colorspace);
-		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, SDL_TEXTUREACCESS_STREAMING);
-		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, cd_surface->w);
-		SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, cd_surface->h);
-		cd_texture = SDL_CreateTextureWithProperties(renderer, props);
-		SDL_DestroyProperties(props);
-		if (cd_texture == NULL) {
+		countdown_texture = SDL_CreateTextureFromSurface(renderer, cd_surface);
+        SDL_DestroySurface(cd_surface);
+        SDL_DestroySurface(cd_border_surface);
+		if (countdown_texture == NULL) {
 			std::cerr << "Couldn't create cd_texture: " << SDL_GetError() << std::endl;
 		}
     } else {
         std::cerr << "Couldn't create cd_surface: " << SDL_GetError() << std::endl;
     }
 	std::cout << "created cd_texture: " << std::endl;
+}
+
+void Camera::renderCountdown(SDL_Renderer *renderer) {
+    if (countdown.update) {
+        SDL_DestroyTexture(countdown_texture);
+        createCountdownTexture(renderer);
+        countdown.update = false;
+    }
     int win_w, win_h;
     SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-    float relative_font_scale = 0.7f;
+    float relative_font_scale = 0.5f;
     SDL_FRect d;
     d.h = win_h * relative_font_scale;
-    d.w = win_h * (float) cd_texture->w / cd_texture->h * relative_font_scale;
-    d.x = (win_h / 2.0f) - (d.w / 2.0f);
-    d.x = (win_w / 2.0f) - (d.h / 2.0f);
-    SDL_RenderTexture(renderer, cd_texture, NULL, &d);
+    d.w = win_h * (float) countdown_texture->w / countdown_texture->h * relative_font_scale;
+    d.y = (win_h / 2.0f) - (d.h / 2.0f);
+    d.x = (win_w / 2.0f) - (d.w / 2.0f);
+    SDL_RenderTexture(renderer, countdown_texture, NULL, &d);
 }
 
 bool Camera::renderFrame(SDL_Renderer *renderer, Settings *settings) {
@@ -369,16 +379,18 @@ bool Camera::renderTexture(
 
 bool Camera::updateCountdown(CountdownSettings *cd_set) {
     if (!countdown.active) return false;
-
+    
 	Uint64 time_to_next_num = (cd_set->len - countdown.position + 1) * cd_set->pace;
 	Uint64 time_curr = SDL_GetTicks() - countdown.start_time;
 	if (time_curr >= time_to_next_num) {
 		countdown.position--;
+        countdown.update = true;
 		std::cout << "  --  COUNTDOWN  --  " << countdown.position;
         std::cout << " since: " << time_curr << " > " << time_to_next_num << std::endl;
 	}
 	if (countdown.position < -1) {
 		countdown.active = false;
+        countdown.update = true;
 		countdown.position = cd_set->len;
 		std::cout << "  --  COUNTDOWN  END --  " << std::endl;
         return true;
@@ -388,7 +400,7 @@ bool Camera::updateCountdown(CountdownSettings *cd_set) {
 
 void Camera::startCountdown(CountdownSettings *cd_set) {
     if (countdown.active) return;
-
+    countdown.update = true;
 	countdown.position = cd_set->len;
 	countdown.start_time = SDL_GetTicks();
 	countdown.active = true;
