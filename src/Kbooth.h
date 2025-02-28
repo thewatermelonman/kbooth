@@ -19,16 +19,12 @@ namespace Kbooth
 	};
 
 	// counts down from Countdown.len --> 0 at Countdown.pace
-	struct Countdown {
+	struct CountdownSettings {
 		int len;
 		int pace;	
-	
-		bool active;
-		int position;
-		Uint64 start_time;
 	};
 
-    struct Printing {
+    struct PrintSettings {
 		std::string save_folder;
 		bool save_images;
 		bool print_images;
@@ -41,8 +37,8 @@ namespace Kbooth
     struct Settings
     {
 		Framing framing;
-		Countdown countdown;
-        Printing printing;
+		CountdownSettings countdown;
+        PrintSettings print_settings;
 		Uint32 capture_button; // Button that triggers image Capture
     };
 }

@@ -5,7 +5,8 @@
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
 #include "SDL3_image/SDL_image.h"
-#include "libdither.h"
+#include "SDL3_ttf/SDL_ttf.h"
+#include "SDL3_ttf/SDL_textengine.h"
 #include <iostream>
 #include <string>
 #include <ctime>
@@ -19,6 +20,10 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
+    char font[] = "../assets/fonts/font1.ttf";
+    countdown_font = TTF_OpenFont(font, 500);
+    countdown_border_font = TTF_OpenFont(font, 500);
+    TTF_SetFontOutline(countdown_border_font, 1);
 }
 
 void Camera::cleanup() {
@@ -42,12 +47,15 @@ void Camera::cleanup() {
         SDL_free(cameras);
     }
 }
+
 Camera::~Camera() {
 	cleanup();
+    TTF_CloseFont(countdown_font);
 	std::cout << "Closing Camera Resources" << std::endl;
 }
 
 bool Camera::open(int camera_index, int format_index) {
+	countdown = {.active = false, .update = true, .position = 3, .start_time = 0};
 	cleanup();
     cameras = SDL_GetCameras(&cameras_size);
     if (cameras_size == 0 || cameras == nullptr) {
@@ -132,102 +140,14 @@ const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
 	return specs_description;
 }
 
-bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing) {
-    Uint64 timestampNS;
-    SDL_Surface *frame = SDL_AcquireCameraFrame(camera, &timestampNS);
-
-    setAspectRatio(renderer, framing->aspect_x, framing->aspect_y);
-    if (frame != NULL) {
-        if (texture != nullptr) {
-            SDL_UpdateTexture(texture, NULL, frame->pixels, frame->pitch);
-        } else {
-
-			std::cout << "created texture: " << std::endl;
-            SDL_Colorspace colorspace = SDL_GetSurfaceColorspace(frame);
-            SDL_PropertiesID props = SDL_CreateProperties();
-            SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, frame->format);
-            SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER, colorspace);
-            SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, SDL_TEXTUREACCESS_STREAMING);
-            SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, frame->w);
-            SDL_SetNumberProperty(props, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, frame->h);
-            texture = SDL_CreateTextureWithProperties(renderer, props);
-            SDL_DestroyProperties(props);
-            if (texture == NULL) {
-				std::cerr << "Couldn't create texture: " << SDL_GetError() << std::endl;
-				texture = nullptr;
-				return false;
-            }
-        }
-        SDL_ReleaseCameraFrame(camera, frame);
-    }
-
-	if (!texture) return true;
-	renderTexture(renderer, texture, framing, true);
-	return true;
-}
-
-int brightnessContrast(float b, float c, float x) {
-    float y = b + c + x * ((255.0f - c)/255.0f);
-    return (int) std::min(255.0f, y);
-}
-
-void Camera::saveAndPrintImage(Printer *printer, Printing *printing) {
-    if (printing->save_images) {
-		std::string filename = printing->save_folder + "/" + getDateAndTime() + "_" + std::to_string(++image_count) + ".jpg";
+void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {
+    if (print_set->save_images) {
+		std::string filename = print_set->save_folder + "/"; 
+        filename += getDateAndTime() + "_" + std::to_string(++image_count) + ".jpg";
         IMG_SaveJPG(capture_surface, filename.c_str(), 100);
     }
-	if (printing->print_images && capture_surface != nullptr) {
-		int w, h;
-        SDL_Surface *scaled_surface;
-        DitherImage* dither_image;
-        if (printing->landscape) {
-            int max_height = 576;
-            float scaled_width = (float) capture_surface->w * max_height / (float) capture_surface->h;
-            scaled_surface = SDL_ScaleSurface(capture_surface, (int) scaled_width, max_height, SDL_SCALEMODE_LINEAR);
-    	    dither_image = DitherImage_new(scaled_surface->h, scaled_surface->w);
-        } else {
-            int max_width = 576;
-            float scaled_height = (float) capture_surface->h * max_width / (float) capture_surface->w;
-            scaled_surface = SDL_ScaleSurface(capture_surface, max_width, (int) scaled_height, SDL_SCALEMODE_LINEAR);
-    	    dither_image = DitherImage_new(scaled_surface->w, scaled_surface->h);
-        }
-        w = scaled_surface->w;
-        h = scaled_surface->h;
-		Uint8 r, g, b;
-        std::cout << "Scale X-Y" << w << "-" << h << std::endl;
-        std::cout << "Dither X-Y" << dither_image->width << "-" << dither_image->height << std::endl;
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				SDL_ReadSurfacePixel(scaled_surface, x, y, &r, &g, &b, NULL);
-                r = brightnessContrast(printing->brightness, printing->contrast, r);
-                g = brightnessContrast(printing->brightness, printing->contrast, g);
-                b = brightnessContrast(printing->brightness, printing->contrast, b);
-                if (printing->landscape) {
-                    if (x <= 2 && y <= 2) std::cout <<  x << "|" << y << " --To-- " << h-y << "|" << x << std::endl;
-                    DitherImage_set_pixel(dither_image, h-y, x, r, g, b, true);
-                } else {
-                    DitherImage_set_pixel(dither_image, x, y, r, g, b, true);
-                }
-			}
-		}
-        uint8_t *out_image = (uint8_t*)calloc(w * h, sizeof(uint8_t));
-        ErrorDiffusionMatrix *em = get_shiaufan3_matrix();
-		// error_diffusion_dither(dither_image, em, false, 0.0, out_image);
-        dbs_dither(dither_image, 3, out_image);
-		printer->printDitheredImage(out_image, dither_image->width, dither_image->height);
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				Uint8 f = out_image[x + y * w] == 0xff ? 255 : 0;
-				SDL_WriteSurfacePixel(scaled_surface, x, y, f, f, f, 255);
-			}
-		}
-		std::string filename = printing->save_folder + "/DITH_" + getDateAndTime() + "_" + std::to_string(++image_count) + ".jpg";
-        IMG_SaveJPG(scaled_surface, filename.c_str(), 100);
-        ErrorDiffusionMatrix_free(em);
-    	free(out_image);
-		SDL_DestroySurface(scaled_surface);
-		SDL_DestroySurface(capture_surface);
-		capture_surface = nullptr;
+	if (print_set->print_images && capture_surface != nullptr) {
+        printer->printSdlSurface(capture_surface, print_set);
 	}
 	if (capture_texture != nullptr) {
 		SDL_DestroyTexture(texture);
@@ -270,6 +190,60 @@ void Camera::setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y) 
         framing_bar_start.y = 0;
         framing_bar_end.w = framing_bar_start.w;
         framing_bar_end.h = framing_bar_start.h;
+}
+
+void Camera::createCountdownTexture(SDL_Renderer *renderer) {
+    SDL_Color cd_color = {.r = 255, .g = 255, .b = 255, .a = 255};
+    SDL_Surface *cd_surface = TTF_RenderGlyph_Blended(
+        countdown_font, 
+        (Uint32) (48 + countdown.position), 
+        cd_color); 
+    cd_color = {.r = 0, .g = 0, .b = 0, .a = 255};
+    SDL_Surface *cd_border_surface = TTF_RenderGlyph_Blended(
+        countdown_border_font, 
+        (Uint32) (48 + countdown.position), 
+        cd_color); 
+    SDL_BlitSurface(cd_border_surface, NULL, cd_surface, NULL);
+    if (cd_surface) {
+		countdown_texture = SDL_CreateTextureFromSurface(renderer, cd_surface);
+        SDL_DestroySurface(cd_surface);
+        SDL_DestroySurface(cd_border_surface);
+		if (countdown_texture == NULL) {
+			std::cerr << "Couldn't create cd_texture: " << SDL_GetError() << std::endl;
+		}
+    } else {
+        std::cerr << "Couldn't create cd_surface: " << SDL_GetError() << std::endl;
+    }
+	std::cout << "created cd_texture: " << std::endl;
+}
+
+void Camera::renderCountdown(SDL_Renderer *renderer) {
+    if (countdown.update) {
+        SDL_DestroyTexture(countdown_texture);
+        createCountdownTexture(renderer);
+        countdown.update = false;
+    }
+    int win_w, win_h;
+    SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+    float relative_font_scale = 0.5f + countdown.progression * 0.4f;
+    SDL_FRect d;
+    d.h = win_h * relative_font_scale;
+    d.w = win_h * (float) countdown_texture->w / countdown_texture->h * relative_font_scale;
+    d.y = (win_h / 2.0f) - (d.h / 2.0f);
+    d.x = (win_w / 2.0f) - (d.w / 2.0f);
+    SDL_RenderTexture(renderer, countdown_texture, NULL, &d);
+}
+
+bool Camera::renderFrame(SDL_Renderer *renderer, Settings *settings) {
+    if (countdown.position < 1 && countdown.active) {
+        return renderImageCapture(renderer, settings);
+    } else if (countdown.active) {
+        bool res = renderCameraFeed(renderer, &settings->framing, true);
+        renderCountdown(renderer);
+        return res;
+    } else {
+        return renderCameraFeed(renderer, &settings->framing, true);
+    }
 }
 
 bool Camera::renderCameraFeed(SDL_Renderer *renderer, Framing *framing, bool renderBorder) {
@@ -340,14 +314,19 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Settings *settings) {
 	
 	// Animate Image Capture
  	Framing new_frame = {.zoom = 0.8, .pos_x = 0.0, .pos_y = 0.0, .mirror = false, .rotation = 0.0f};
-	float ms_since_zero = (float) (SDL_GetTicks() - settings->countdown.start_time - ((settings->countdown.len) * settings->countdown.pace));
+    float ms_since_start = SDL_GetTicks() - countdown.start_time;
+	float ms_since_zero = (float) (ms_since_start - ((settings->countdown.len) * settings->countdown.pace));
 	float inverse_lerp = 1.0f - (ms_since_zero / (float) settings->countdown.pace);
 	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
 	new_frame.pos_y = -1.0f + inverse_lerp * 2;
 	return renderTexture(renderer, capture_texture, &new_frame, false);
 }
 
-bool Camera::renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing *framing, bool renderBorder) {
+bool Camera::renderTexture(
+    SDL_Renderer *renderer, 
+    SDL_Texture *texture, 
+    Framing *framing, 
+    bool renderBorder) {
 
 	int win_w, win_h;
 	SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
@@ -373,7 +352,15 @@ bool Camera::renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing
 	d.w = texture->w * scale + zoom_crop_x * 2;
 	d.h = texture->h * scale + zoom_crop_y * 2;
 
-	bool error = !SDL_RenderTextureRotated(renderer, texture, NULL, &d, (double) framing->rotation, NULL, framing->mirror ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+	bool error = !SDL_RenderTextureRotated(
+        renderer, 
+        texture, 
+        NULL, 
+        &d, 
+        (double) framing->rotation, 
+        NULL, 
+        framing->mirror ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+
     if (renderBorder) {
         SDL_FRect frame_F;
         SDL_RectToFRect(&frame, &frame_F);
@@ -390,3 +377,36 @@ bool Camera::renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, Framing
     }
     return true;
 }
+
+bool Camera::updateCountdown(CountdownSettings *cd_set) {
+    if (!countdown.active) return false;
+    
+	Uint64 time_to_next_num = (cd_set->len - countdown.position + 1) * cd_set->pace;
+	Uint64 time_curr = SDL_GetTicks() - countdown.start_time;
+    countdown.progression = 1.0f - (float) (time_to_next_num - time_curr) / (float) cd_set->pace;
+	if (time_curr >= time_to_next_num) {
+		countdown.position--;
+        countdown.progression = 0.0f;
+        countdown.update = true;
+		std::cout << "  --  COUNTDOWN  --  " << countdown.position;
+        std::cout << " since: " << time_curr << " > " << time_to_next_num << std::endl;
+	}
+	if (countdown.position < -1) {
+		countdown.active = false;
+        countdown.update = true;
+		countdown.position = cd_set->len;
+		std::cout << "  --  COUNTDOWN  END --  " << std::endl;
+        return true;
+	}
+    return false;
+}
+
+void Camera::startCountdown(CountdownSettings *cd_set) {
+    if (countdown.active) return;
+    countdown.update = true;
+	countdown.position = cd_set->len;
+	countdown.start_time = SDL_GetTicks();
+	countdown.active = true;
+	std::cout << "Started Countdown at time " << countdown.start_time << "ms." << std::endl;
+}
+

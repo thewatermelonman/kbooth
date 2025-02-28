@@ -4,8 +4,6 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
-#include <string>
-#include <algorithm>
 
 using namespace Kbooth;
 
@@ -21,7 +19,9 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 
 	//get available formats for the first (default) camera
 	formats = this->camera->getAvailFormatNames(camera_index, &formats_size);
-	format_index = -1;
+	format_index = 0;
+
+	// settings window
 	opened = false;
 	alpha = 0.86;
 
@@ -43,7 +43,6 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
     io.Fonts->AddFontDefault();
 
     font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 25.0f);
-    font_countdown = io.Fonts->AddFontFromFileTTF("../assets/fonts/font.ttf", 200.0f);
     IM_ASSERT(font_regular != nullptr);
 }
 
@@ -67,34 +66,19 @@ void UIWindow::processEvent(SDL_Event *event) {
 	}
 }
 
-void UIWindow::render(Countdown *countdown) {
-	if (!opened && !countdown->active) return;
+void UIWindow::render() {
+	if (!opened) return;
 
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-	if (opened) {
-		renderSettingsWindow();
-	}
-	if (countdown->active && countdown->position > 0) {
-		renderCountdown(countdown);
-	}
+	renderSettingsWindow();
 
     ImGui::Render();
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 }
 
-void UIWindow::renderCountdown(Countdown *countdown) {
-	std::string countdown_text = std::to_string(countdown->position);
-	ImVec2 window_size = ImGui::GetIO().DisplaySize;
-	ImVec2 center = ImVec2(window_size.x * 0.5f, window_size.y * 0.5f);
-	ImGui::PushFont(font_countdown);
-	ImVec2 text_size = ImGui::CalcTextSize(countdown_text.c_str());
-	ImVec2 text_pos = ImVec2(center.x - text_size.x * 0.5f, center.y - text_size.y * 0.5f);
-	ImGui::GetForegroundDrawList()->AddText(text_pos, IM_COL32(255, 255, 255, 255), countdown_text.c_str());	
-	ImGui::PopFont();
-}
 
 void UIWindow::renderSettingsWindow() {
 	ImGui::PushFont(font_regular);
@@ -131,11 +115,11 @@ void UIWindow::renderSettingsWindow() {
 
 	ImGui::PushItemWidth(width.x / 4.0f);
         if (ImGui::InputInt("X", &settings->framing.aspect_x, 1, 1)) {
-            settings->framing.aspect_x = std::clamp(settings->framing.aspect_x, 1, 35);
+            settings->framing.aspect_x = std::max(1, std::min(35, settings->framing.aspect_x));
         }
         ImGui::SameLine();
         if (ImGui::InputInt("Y \t Aspect Ratio", &settings->framing.aspect_y, 1, 1)) {
-            settings->framing.aspect_y = std::clamp(settings->framing.aspect_y, 1, 35);
+            settings->framing.aspect_y = std::max(1, std::min(35, settings->framing.aspect_x));
         }
 	ImGui::PopItemWidth();
 
@@ -168,7 +152,7 @@ void UIWindow::renderSettingsWindow() {
     
 	ImGui::SeparatorText("Image Capture");
     float pace = settings->countdown.pace / 1000.0;
-    if (ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 25, "%d"));
+    ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 9, "%d");
     if (ImGui::SliderFloat("Countdown Speed", &pace, 0.8, 3.0, "%.1fsec")) {
         settings->countdown.pace = (int) (pace * 1000);
     }
@@ -176,14 +160,14 @@ void UIWindow::renderSettingsWindow() {
 	
 	ImGui::SeparatorText("Printing");
 
-	ImGui::Checkbox("Save Images", &settings->printing.save_images);
-	ImGui::Checkbox("Print Images", &settings->printing.print_images);
+    ImGui::Checkbox("Save Images", &settings->print_settings.save_images);
+	ImGui::Checkbox("Print Images", &settings->print_settings.print_images);
 
-    if (ImGui::RadioButton("Landscape", settings->printing.landscape)) { settings->printing.landscape = true; } ImGui::SameLine();
-    if (ImGui::RadioButton("Portrait", !settings->printing.landscape)) { settings->printing.landscape = false; }
+    if (ImGui::RadioButton("Landscape", settings->print_settings.landscape)) { settings->print_settings.landscape = true; } ImGui::SameLine();
+    if (ImGui::RadioButton("Portrait", !settings->print_settings.landscape)) { settings->print_settings.landscape = false; }
 
-	ImGui::SliderFloat("Image Brightness", &settings->printing.brightness, 20.0f, 40.0f, "");
-	ImGui::SliderFloat("Image Contrast", &settings->printing.contrast, 140.0f, 60.0f, "");
+	ImGui::SliderFloat("Image Brightness", &settings->print_settings.brightness, 20.0f, 40.0f, "");
+	ImGui::SliderFloat("Image Contrast", &settings->print_settings.contrast, 140.0f, 60.0f, "");
 
 	ImGui::SeparatorText("Extra");
 

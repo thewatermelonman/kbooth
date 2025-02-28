@@ -4,36 +4,23 @@
 #include "stb_image.h"
 #include <iostream>
 #include "EscPosCommands.h"
+#include "SDL3/SDL.h"
+#include "libdither.h"
+#include <string>
 
 using namespace Kbooth;
 
 
-static std::vector<std::vector<bool>> loadImage(std::string filename){
-    int width, height, channels;
-    stbi_uc *result = stbi_load(filename.c_str(), &width, &height, &channels, 3);
-
-    std::vector< std::vector<bool> > image(height, std::vector<bool>(width, 0));
-    for(int i = 0; i < width; i++){
-        for(int j = 0; j < height; j++){
-            // For each pixel, we will use the Luminosity method:
-            // -> (0.3 * R) + (0.59 * G) + (0.11 * B)
-            float grayscale = result[3*i + width*j*3] * 0.3;
-            grayscale += result[3*i +1 + width*j*3] * 0.59;
-            grayscale += result[3*i +2 + width*j*3] * 0.11;
-            image[j][i] = grayscale < 150 ;
-            //image[j][i] = result[3*i + width*j*3] > (unsigned char) 150;
-        }
-    }
-    stbi_image_free(result);
-
-    return image;
+int brightnessContrast(float b, float c, float x) {
+    float y = b + c + x * ((255.0f - c)/255.0f);
+    return (int) std::min(255.0f, y);
 }
 
 bool Printer::init(int port) {
 	libusb_context *ctx = NULL;
 	handle = nullptr;
 	int err = libusb_init(&ctx);
-	unsigned char string[256];
+    std::vector<std::string> usb_descriptors;
 	struct libusb_device_descriptor desc;
     if (err) {
 		std::cerr << "libusb initialization failed\n" << std::endl;
@@ -49,25 +36,25 @@ bool Printer::init(int port) {
 		if (handle != nullptr) {
 			int ret = libusb_get_device_descriptor(device_list[i], &desc);
 			if (ret < 0) {
-				fprintf(stderr, "failed to get device descriptor");
+				std::cerr << "failed to get device descriptor" << std::endl;
 				return false;
 			}
-			if (desc.iManufacturer) {
-				int ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, string, sizeof(string));
-				if (ret > 0)
-                    std::cout << "Port: " << dev_port;
-					printf("  Manufacturer:              %s\n", (char *)string);
-			}
-			if (desc.iProduct) {
-				int ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, string, sizeof(string));
-				if (ret > 0)
-					printf("  Product:                   %s\n", (char *)string);
-			}
+            unsigned char data[256];
+            ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, data, 256);
+            std::cout << "On Port " << dev_port << "  found: " << data << std::endl;
+            if (ret > 0) {
+                std::string data_sting(reinterpret_cast<char*>(data));
+                UsbDevice device = {
+                    .vendor_id = desc.idVendor,
+                    .product_id = desc.idProduct,
+                    .description = data_sting}; 
+                usb_devices.push_back(device);
+            }
 			libusb_close(handle);
 			handle = nullptr;
-			if (dev_port == port) {
+			if (dev_port == port && printer == nullptr) {
 				printer = device_list[i];
-				break;
+				// break;
 			}
 		}
 	}
@@ -81,12 +68,7 @@ bool Printer::init(int port) {
         fprintf(stderr, "failed to get device descriptor");
         return false;
     }
-    std::cout << "Opened Device:";
-    if (desc.iProduct) {
-		int ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, string, sizeof(string));
-        if (ret > 0) std::cout << string;
-    }
-    std::cout << std::endl;
+    std::cout << "Opened Device" << std::endl;
 	if (err) {
 		std::cerr << "ERROR: could not open usb device: " << (int) err << std::endl;
 		libusb_free_device_list(device_list, 0);
@@ -181,6 +163,55 @@ void Printer::printDitheredImage(uint8_t *image, int width, int height) {
 	std::cout << "xL "<< (int) xL << ", xH "<< (int) xH << ", yL "<< (int) yL << ", yH "<< (int) yH << std::endl; 
 }
 
+void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print_set) {
+    int w, h;
+    SDL_Surface *scaled_surface;
+    DitherImage* dither_image;
+    if (print_set->landscape) {
+        int max_height = 576;
+        float scaled_width = (float) capture_surface->w * max_height / (float) capture_surface->h;
+        scaled_surface = SDL_ScaleSurface(capture_surface, (int) scaled_width, max_height, SDL_SCALEMODE_LINEAR);
+        dither_image = DitherImage_new(scaled_surface->h, scaled_surface->w);
+    } else {
+        int max_width = 576;
+        float scaled_height = (float) capture_surface->h * max_width / (float) capture_surface->w;
+        scaled_surface = SDL_ScaleSurface(capture_surface, max_width, (int) scaled_height, SDL_SCALEMODE_LINEAR);
+        dither_image = DitherImage_new(scaled_surface->w, scaled_surface->h);
+    }
+    w = scaled_surface->w;
+    h = scaled_surface->h;
+    Uint8 r, g, b;
+    std::cout << "Scale X-Y" << w << "-" << h << std::endl;
+    std::cout << "Dither X-Y" << dither_image->width << "-" << dither_image->height << std::endl;
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+            SDL_ReadSurfacePixel(scaled_surface, x, y, &r, &g, &b, NULL);
+            r = brightnessContrast(print_set->brightness, print_set->contrast, r);
+            g = brightnessContrast(print_set->brightness, print_set->contrast, g);
+            b = brightnessContrast(print_set->brightness, print_set->contrast, b);
+            if (print_set->landscape) {
+                if (x <= 2 && y <= 2) std::cout <<  x << "|" << y << " --To-- " << h-y << "|" << x << std::endl;
+                DitherImage_set_pixel(dither_image, h-y, x, r, g, b, true);
+            } else {
+                DitherImage_set_pixel(dither_image, x, y, r, g, b, true);
+            }
+        }
+    }
+    uint8_t *out_image = (uint8_t*)calloc(w * h, sizeof(uint8_t));
+    ErrorDiffusionMatrix *em = get_shiaufan3_matrix();
+    // error_diffusion_dither(dither_image, em, false, 0.0, out_image);
+    dbs_dither(dither_image, 3, out_image);
+    printDitheredImage(out_image, dither_image->width, dither_image->height);
+    ErrorDiffusionMatrix_free(em);
+    free(out_image);
+    SDL_DestroySurface(scaled_surface);
+}
+
+
+
+
+//unused
+/*
 void Printer::printBitmap(std::vector< std::vector<bool> > &bitmap) {
 	// Quickly check the integrity of the "bitmap"
     int height = bitmap.size();
@@ -225,3 +256,25 @@ void Printer::printBitmap(std::vector< std::vector<bool> > &bitmap) {
 	std::cout << "AFTER DATA TRANS: " << total.size() << std::endl; 
     send_command(ESC_Two);
 }
+
+static std::vector<std::vector<bool>> loadImage(std::string filename){
+    int width, height, channels;
+    stbi_uc *result = stbi_load(filename.c_str(), &width, &height, &channels, 3);
+
+    std::vector< std::vector<bool> > image(height, std::vector<bool>(width, 0));
+    for(int i = 0; i < width; i++){
+        for(int j = 0; j < height; j++){
+            // For each pixel, we will use the Luminosity method:
+            // -> (0.3 * R) + (0.59 * G) + (0.11 * B)
+            float grayscale = result[3*i + width*j*3] * 0.3;
+            grayscale += result[3*i +1 + width*j*3] * 0.59;
+            grayscale += result[3*i +2 + width*j*3] * 0.11;
+            image[j][i] = grayscale < 150 ;
+            //image[j][i] = result[3*i + width*j*3] > (unsigned char) 150;
+        }
+    }
+    stbi_image_free(result);
+
+    return image;
+}
+*/

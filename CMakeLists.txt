@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.15)
 
 project(kbooth LANGUAGES CXX)
 
+#set(CMAKE_CXX_COMPILER "clang++")
+#message(STATUS "\nCXX Include Directories: ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}\n")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(KB_SRC "src")
 set(KB_EXTERNAL "external")
@@ -44,6 +47,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 add_subdirectory(${KB_EXTERNAL}/SDL EXCLUDE_FROM_ALL)
 add_subdirectory(${KB_EXTERNAL}/SDL_image EXCLUDE_FROM_ALL)
+add_subdirectory(${KB_EXTERNAL}/SDL_ttf EXCLUDE_FROM_ALL)
 add_subdirectory(${KB_EXTERNAL}/libusb EXCLUDE_FROM_ALL)
 add_subdirectory(${KB_EXTERNAL}/libdither)
 
@@ -58,9 +62,10 @@ target_include_directories(
 	${KB_EXTERNAL}/libdither/src/libdither)
 
 target_link_libraries(
-	${PROJECT_NAME} 
-	PRIVATE 
-	SDL3_image::SDL3_image 
+	${PROJECT_NAME}
+	PRIVATE
+	SDL3_image::SDL3_image
+	SDL3_ttf::SDL3_ttf
 	SDL3::SDL3 usb-1.0
 	libdither)
-	
+
