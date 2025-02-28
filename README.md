@@ -22,7 +22,4 @@ git clone --recurse-submodules --shallow-submodules https://github.com/thewaterm
  cmake ..
  make 
 ```
-
-## Requirements:
-libusb - [https://libusb.info/]
-- on Windows Zadig can be used to install WinUSB/libusb Drivers
+- Requirements: libusb
