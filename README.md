@@ -1,10 +1,7 @@
 # kbooth
 Photobooth Application for printing to ESC/POS Printers.
 
-
-# Requirements:
-libusb - [https://libusb.info/]
-- on Windows Zadig can be used to install WinUSB/libusb Drivers
+Tested with 
 
 # External Libraries
 - SDL3 -  [https://wiki.libsdl.org/SDL3] Sam Lantinga
@@ -25,3 +22,7 @@ git clone --recurse-submodules --shallow-submodules https://github.com/thewaterm
  cmake ..
  make 
 ```
+
+## Requirements:
+libusb - [https://libusb.info/]
+- on Windows Zadig can be used to install WinUSB/libusb Drivers
