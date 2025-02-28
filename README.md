@@ -1,17 +1,18 @@
 # kbooth
 Photobooth Application for printing to ESC/POS Printers.
 
+
 # Requirements:
-cmake
-libusb
+libusb - [https://libusb.info/]
+- on Windows Zadig can be used to install WinUSB/libusb Drivers
 
 # External Libraries
-- SDL3
-- SDLimages
-- SDLttf
-- Dear ImGui
-- libdither
-- libusb
+- SDL3 -  [https://wiki.libsdl.org/SDL3] Sam Lantinga
+- SDLimages - [https://wiki.libsdl.org/SDL3_ttf] Sam Lantinga 
+- SDLttf -  [https://wiki.libsdl.org/SDL3_image] Sam Lantinga
+- Dear ImGui - [https://github.com/ocornut/imgui] Omar Cornut
+- libdither - [https://github.com/robertkist/libdither] Robert Kist
+- libusb - [https://libusb.info/]  
 
 # Build
 
