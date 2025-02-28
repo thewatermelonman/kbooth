@@ -152,7 +152,7 @@ void UIWindow::renderSettingsWindow() {
     
 	ImGui::SeparatorText("Image Capture");
     float pace = settings->countdown.pace / 1000.0;
-    ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 25, "%d");
+    ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 9, "%d");
     if (ImGui::SliderFloat("Countdown Speed", &pace, 0.8, 3.0, "%.1fsec")) {
         settings->countdown.pace = (int) (pace * 1000);
     }

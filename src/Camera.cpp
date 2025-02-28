@@ -20,9 +20,10 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
-    countdown_font = TTF_OpenFont("../assets/fonts/font.ttf", 1400);
-    countdown_border_font = TTF_OpenFont("../assets/fonts/font.ttf", 1400);
-    TTF_SetFontOutline(countdown_border_font, 3);
+    char font[] = "../assets/fonts/font1.ttf";
+    countdown_font = TTF_OpenFont(font, 500);
+    countdown_border_font = TTF_OpenFont(font, 500);
+    TTF_SetFontOutline(countdown_border_font, 1);
 }
 
 void Camera::cleanup() {
@@ -224,7 +225,7 @@ void Camera::renderCountdown(SDL_Renderer *renderer) {
     }
     int win_w, win_h;
     SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-    float relative_font_scale = 0.5f;
+    float relative_font_scale = 0.5f + countdown.progression * 0.4f;
     SDL_FRect d;
     d.h = win_h * relative_font_scale;
     d.w = win_h * (float) countdown_texture->w / countdown_texture->h * relative_font_scale;
@@ -382,8 +383,10 @@ bool Camera::updateCountdown(CountdownSettings *cd_set) {
     
 	Uint64 time_to_next_num = (cd_set->len - countdown.position + 1) * cd_set->pace;
 	Uint64 time_curr = SDL_GetTicks() - countdown.start_time;
+    countdown.progression = 1.0f - (float) (time_to_next_num - time_curr) / (float) cd_set->pace;
 	if (time_curr >= time_to_next_num) {
 		countdown.position--;
+        countdown.progression = 0.0f;
         countdown.update = true;
 		std::cout << "  --  COUNTDOWN  --  " << countdown.position;
         std::cout << " since: " << time_curr << " > " << time_to_next_num << std::endl;

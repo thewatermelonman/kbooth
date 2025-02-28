@@ -9,9 +9,10 @@ namespace Kbooth {
 
     struct CountdownState {
 		bool active;
-        bool update;
-		int position;
-		Uint64 start_time;
+        bool update; // signals change in position
+		int position; // n
+		Uint64 start_time; // t0
+        float progression; // [0.0, 1.0)  for progression between tn and t(n-1)
     };
         
     class Camera {
