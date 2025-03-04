@@ -20,6 +20,7 @@ void initializePrinter();
 int window_width;
 int window_height;
 bool window_should_close = false;
+bool window_should_close_startup = false;
 bool fullscreen = false;
 
 SDL_Window *window = nullptr;
@@ -60,15 +61,14 @@ int main() {
 
         if (settings.print_settings.print_images && !default_printer_configured) {
             UsbDevice *printer_dev = nullptr;
-            while (!window_should_close) { // Startup
+            while (!window_should_close_startup) { // Startup
                 SDL_SetRenderDrawColorFloat(renderer, 0.0, 0.0, 0.0, 1.0);
                 SDL_RenderClear(renderer);
-                window_should_close = ui.renderStartup();
+                window_should_close_startup = ui.renderStartup();
                 SDL_RenderPresent(renderer);
                 handle_user_input(&ui);
             }
             ui.openSelectedPrinterUsbDevice(&printer, &ini);
-            window_should_close = false;
         }
 
         while (!window_should_close) { // Main Loop
@@ -120,9 +120,13 @@ void load_settings_config() {
         },
 		.capture_button = SDLK_SPACE, 
 	};
-    if (ini.LoadFile("../assets/settings/config.ini") < 0) { // assuming run from build directory
-        if (ini.LoadFile("assets/settings/config.ini") < 0)
- 		    std::cout << "No settings file found. Running with default."<< std::endl;
+	int err = ini.LoadFile("../assets/settings/config.ini"); 
+    if (err < 0) { // assuming run from build directory
+ 		std::cout << "No settings file found in ./assets."<< std::endl;
+		err = ini.LoadFile("./assets/settings/config.ini");
+	}
+    if (err < 0) {
+ 		std::cout << "No settings file found. Running with default."<< std::endl;
 	} else {
 		window_width = (int)ini.GetLongValue("config", "WindowWidth", 1900 / 2);
 		window_height = (int)ini.GetLongValue("config", "WindowHeight", 1080 / 2);
@@ -161,6 +165,7 @@ void handle_user_input(UIWindow *ui) {
 			(event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
 			event.window.windowID == SDL_GetWindowID(window))) {
 			window_should_close = true;
+			window_should_close_startup = true;
 			break;
 		}
 		ui->processEvent(&event);
