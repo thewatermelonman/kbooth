@@ -121,7 +121,8 @@ void load_settings_config() {
 		.capture_button = SDLK_SPACE, 
 	};
     if (ini.LoadFile("../assets/settings/config.ini") < 0) { // assuming run from build directory
- 		std::cout << "No settings file found. Running with default."<< std::endl;
+        if (ini.LoadFile("assets/settings/config.ini") < 0)
+ 		    std::cout << "No settings file found. Running with default."<< std::endl;
 	} else {
 		window_width = (int)ini.GetLongValue("config", "WindowWidth", 1900 / 2);
 		window_height = (int)ini.GetLongValue("config", "WindowHeight", 1080 / 2);
