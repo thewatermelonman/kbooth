@@ -25,5 +25,5 @@ git clone --recurse-submodules --shallow-submodules https://github.com/thewaterm
 ```
 
 ## Requirements:
-cmake
-libusb - [https://libusb.info/]
+- cmake
+- libusb
