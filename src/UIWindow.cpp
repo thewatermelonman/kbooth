@@ -2,6 +2,7 @@
 
 #include "Kbooth.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 #include <vector>
@@ -48,10 +49,14 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
     ImGui_ImplSDLRenderer3_Init(renderer);
 
     io.Fonts->AddFontDefault();
-
-    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 22.0f);
-    if (font_regular == nullptr)
-        font_regular = io.Fonts->AddFontFromFileTTF("/assets/fonts/font1.ttf", 22.0f);
+	std::string font_file = "./assets/fonts/font1.ttf";	
+    ImFileHandle f;
+    if ((f = ImFileOpen(font_file.c_str(), "rb")) == NULL) {
+		font_file = "." + font_file;
+	} else {
+		ImFileClose(f);
+	}
+    font_regular = io.Fonts->AddFontFromFileTTF(font_file.c_str(), 22.0f);
     IM_ASSERT(font_regular != nullptr);
 
 }
