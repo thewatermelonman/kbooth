@@ -9,7 +9,8 @@ Tested with
 - SDLttf -  [https://wiki.libsdl.org/SDL3_image] Sam Lantinga
 - Dear ImGui - [https://github.com/ocornut/imgui] Omar Cornut
 - libdither - [https://github.com/robertkist/libdither] Robert Kist
-- libusb - [https://libusb.info/]  
+- libusb - [https://libusb.info/]
+- simpleini - [https://github.com/brofield/simpleini] Brodie Thiesfield
 
 # Build
 
@@ -24,5 +25,5 @@ git clone --recurse-submodules --shallow-submodules https://github.com/thewaterm
 ```
 
 ## Requirements:
+cmake
 libusb - [https://libusb.info/]
-- on Windows Zadig can be used to install WinUSB/libusb Drivers

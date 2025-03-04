@@ -41,6 +41,13 @@ namespace Kbooth
         PrintSettings print_settings;
 		Uint32 capture_button; // Button that triggers image Capture
     };
+
+    struct UsbDevice {
+        uint16_t vendor_id;
+        uint16_t product_id;
+        std::string  description;
+    };
+
 }
 
 

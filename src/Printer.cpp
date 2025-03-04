@@ -16,84 +16,125 @@ int brightnessContrast(float b, float c, float x) {
     return (int) std::min(255.0f, y);
 }
 
-bool Printer::init(int port) {
-	libusb_context *ctx = NULL;
-	handle = nullptr;
-	int err = libusb_init(&ctx);
-    std::vector<std::string> usb_descriptors;
-	struct libusb_device_descriptor desc;
-    if (err) {
-		std::cerr << "libusb initialization failed\n" << std::endl;
+bool Printer::initAndOpen(UsbDevice *default_dev) {
+    std::cout << "HERE I AM" << std::endl;
+    ctx = nullptr;
+    int err = libusb_init(&ctx);
+    if (err != LIBUSB_SUCCESS) {
+        std::cerr << "libusb initialization failed: " << libusb_error_name(err) << std::endl;
         return false;
     }
-	std::cout << "Initialized libusb" << std::endl;
-	ssize_t count = libusb_get_device_list(NULL, &device_list);	
-	libusb_device *printer = nullptr;
-	for (int i = 0; i < count; i++) {
-		int dev_port = (int) libusb_get_port_number(device_list[i]);
-		if (handle == nullptr) libusb_open(device_list[i], &handle);
-
-		if (handle != nullptr) {
-			int ret = libusb_get_device_descriptor(device_list[i], &desc);
-			if (ret < 0) {
-				std::cerr << "failed to get device descriptor" << std::endl;
-				return false;
-			}
-            unsigned char data[256];
-            ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, data, 256);
-            std::cout << "On Port " << dev_port << "  found: " << data << std::endl;
-            if (ret > 0) {
-                std::string data_sting(reinterpret_cast<char*>(data));
-                UsbDevice device = {
-                    .vendor_id = desc.idVendor,
-                    .product_id = desc.idProduct,
-                    .description = data_sting}; 
-                usb_devices.push_back(device);
-            }
-			libusb_close(handle);
-			handle = nullptr;
-			if (dev_port == port && printer == nullptr) {
-				printer = device_list[i];
-				// break;
-			}
-		}
-	}
-	if (printer == nullptr) {
-		std::cerr << "ERROR: No USB device at port: " << port << std::endl;
-		return false;
-	}
-	err = libusb_open(printer, &handle);
-    int ret = libusb_get_device_descriptor(printer, &desc);
-    if (ret < 0) {
-        fprintf(stderr, "failed to get device descriptor");
-        return false;
-    }
-    std::cout << "Opened Device" << std::endl;
-	if (err) {
+    std::cout << "Initialized libusb" << std::endl;
+	handle = libusb_open_device_with_vid_pid(ctx, default_dev->vendor_id, default_dev->product_id);
+	if (handle == NULL) {
 		std::cerr << "ERROR: could not open usb device: " << (int) err << std::endl;
-		libusb_free_device_list(device_list, 0);
 		return false;
 	}
-	std::cout << "OPENED PRINTER" << std::endl;
-
-
+    std::cout << "Opened default printer device: " << std::endl;
 	if (libusb_kernel_driver_active(handle, 0)) {
 		libusb_detach_kernel_driver(handle, 0);
 	}
-
 	err = libusb_claim_interface(handle, 0);
-	if (err) {
+	if (err != LIBUSB_SUCCESS) {
 		std::cerr << "ERROR: could not claim interface: " << err << std::endl;
 		libusb_close(handle);
-		libusb_free_device_list(device_list, 0);
 		return false;
 	}
 	return true;
 }
 
+bool Printer::init() {
+    ctx = nullptr;
+    libusb_device_handle* tmp_handle = nullptr;
+    libusb_device** device_list = nullptr;
+    struct libusb_device_descriptor desc;
+
+    int err = libusb_init(&ctx);
+    if (err != LIBUSB_SUCCESS) {
+        std::cerr << "libusb initialization failed: " << libusb_error_name(err) << std::endl;
+        return false;
+    }
+    std::cout << "Initialized libusb" << std::endl;
+
+    ssize_t count = libusb_get_device_list(ctx, &device_list);
+    if (count < 0) {
+        std::cerr << "Failed to get device list: " << libusb_error_name(static_cast<int>(count)) << std::endl;
+        return false;
+    }
+
+    bool success = false;
+    for (ssize_t i = 0; i < count; i++) {
+        int ret;
+        ret = libusb_open(device_list[i], &tmp_handle);
+        if (ret != LIBUSB_SUCCESS) {
+            std::cerr << "Failed to open device: " << libusb_error_name(ret) << std::endl;
+            continue;
+        }
+        ret = libusb_get_device_descriptor(device_list[i], &desc);
+        if (ret != LIBUSB_SUCCESS) {
+            std::cerr << "Failed to get device descriptor: " << libusb_error_name(ret) << std::endl;
+            libusb_close(tmp_handle);
+            continue;
+        }
+        unsigned char data[256];
+        ret = libusb_get_string_descriptor_ascii(tmp_handle, desc.iProduct, data, sizeof(data));
+        if (ret < 0) {
+            std::cerr << "Failed to get device product string: " << libusb_error_name(ret) << std::endl;
+            libusb_close(tmp_handle);
+            continue;
+        }
+
+        std::string product_string(reinterpret_cast<char*>(data));
+        UsbDevice tmp_dev = {
+            .vendor_id = desc.idVendor,
+            .product_id = desc.idProduct,
+            .description = product_string
+        };
+        usb_devices.push_back(tmp_dev);
+
+        libusb_close(tmp_handle);
+        tmp_handle = nullptr;
+        success = true;
+    }
+
+    libusb_free_device_list(device_list, 0);
+    initialized = success;
+    return success;
+}
+
+std::vector<UsbDevice>* Printer::getAvailUsbDevices() {
+    if (!initialized) return nullptr;
+    return &usb_devices;
+}
+
+bool Printer::open(UsbDevice& dev) {
+	handle = libusb_open_device_with_vid_pid(ctx, dev.vendor_id, dev.product_id);
+	if (handle == NULL) {
+		std::cerr << "ERROR: could not open usb device."  << std::endl;
+		return false;
+	}
+    std::cout << "Opened Device: " << dev.description << std::endl;
+
+	if (libusb_kernel_driver_active(handle, 0)) {
+		libusb_detach_kernel_driver(handle, 0);
+	}
+	int err = libusb_claim_interface(handle, 0);
+	if (err != LIBUSB_SUCCESS) {
+		std::cerr << "ERROR: could not claim interface: " << libusb_error_name(err) << std::endl;
+		libusb_close(handle);
+		return false;
+	}
+	return true;
+}
+
+void Printer::cleanup() {
+	if (handle != nullptr && handle != NULL) libusb_close(handle);
+    libusb_exit(ctx);
+}
+
 Printer::~Printer() {
-	libusb_close(handle);
-	libusb_free_device_list(device_list, 0);
+	if (handle != nullptr && handle != NULL) libusb_close(handle);
+    libusb_exit(ctx);
 	std::cout << "Closing Printer resources" << std::endl;
 }
 

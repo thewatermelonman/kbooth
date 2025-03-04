@@ -9,6 +9,7 @@
 #include "SDL3_ttf/SDL_textengine.h"
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <ctime>
 
 using namespace Kbooth;
@@ -114,30 +115,21 @@ const char ** Camera::getAvailCameraNames(int *size) {
 }
 
 const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
-	SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(cameras[camera_index], formats_size);
-	const char ** specs_description = new const char*[*formats_size];
-	float framerate;
-	for (int i = 0; i < *formats_size; i++) {
-		framerate = (float) specs[i]->framerate_numerator / specs[i]->framerate_denominator;
-		int size = snprintf(nullptr, 
-					  0, 
-					 "%dx%d %.1ffps (%d)",
-					  specs[i]->width, 
-					  specs[i]->height,
-					  framerate, 
-					  specs[i]->colorspace);
-		char *const description = new char[size + 1];
-		snprintf(description, 
-		   size + 1, 
-		   "%dx%d %.1ffps (%d)", 
-		   specs[i]->width, 
-		   specs[i]->height, 
-		   framerate, 
-		   specs[i]->colorspace);
-		specs_description[i] = description;
-	}
-	SDL_free(specs);
-	return specs_description;
+    SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(cameras[camera_index], formats_size);
+    const char **specs_description = new const char*[*formats_size];
+
+    for (int i = 0; i < *formats_size; i++) {
+        float framerate = (float) specs[i]->framerate_numerator / specs[i]->framerate_denominator;
+        std::stringstream description_stream;
+        description_stream << specs[i]->width << "x" << specs[i]->height
+                          << " " << framerate << "fps (" << specs[i]->colorspace << ")";
+
+        std::string description = description_stream.str();
+        specs_description[i] = new char[description.size() + 1];
+        strcpy(const_cast<char*>(specs_description[i]), description.c_str());
+    }
+    SDL_free(specs);
+    return specs_description;
 }
 
 void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {

@@ -1,17 +1,21 @@
 #include "UIWindow.h"
 
+#include "Kbooth.h"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
+#include <vector>
+#include <iostream>
+#include "SimpleIni.h"
 
 
 using namespace Kbooth;
 
 void free_formats(const char **formats, int size);
 
-UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
-                   Settings *settings, Camera *camera)
-    : renderer(renderer), settings(settings), window(window), camera(camera) {
+UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *settings,
+                   Camera *camera, std::vector<UsbDevice> *usb_devices)
+    : renderer(renderer), settings(settings), window(window), camera(camera), printer_usb_devices(usb_devices) {
 
 	//get available cameras
 	cameras = this->camera->getAvailCameraNames(&cameras_size);
@@ -24,6 +28,9 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 	// settings window
 	opened = false;
 	alpha = 0.86;
+
+    printer_usb_device_index = 0;
+    printer_usb_device_set_as_default = false;
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -42,7 +49,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer,
 
     io.Fonts->AddFontDefault();
 
-    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 25.0f);
+    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 18.0f);
     IM_ASSERT(font_regular != nullptr);
 }
 
@@ -79,6 +86,61 @@ void UIWindow::render() {
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 }
 
+bool UIWindow::openSelectedPrinterUsbDevice(Printer *printer, CSimpleIni *ini) {
+    UsbDevice& printer_device = printer_usb_devices->at(printer_usb_device_index);
+    bool res = printer->open(printer_device);
+    if (printer_usb_device_set_as_default && res) {
+        std::cout << "setting defaut printer usb device: ";
+
+        std::cout << "\tconfig: " << "PrinterUsbVendorId" << (long) printer_device.vendor_id << std::endl;
+        std::cout << "\tconfig: " << "PrinterUsbProductId" << (long) printer_device.product_id << std::endl;
+
+        ini->SetLongValue("config", "PrinterUsbVendorId", (long) printer_device.vendor_id);
+        ini->SetLongValue("config", "PrinterUsbProductId", (long) printer_device.product_id);
+        ini->SaveFile("../assets/settings/config.ini");
+
+    }
+    return res;
+}
+
+bool UIWindow::renderStartup() {
+
+    bool output = false;
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+    ImGui::Begin("Kbooth - Select Printer", NULL, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
+    ImGui::Text("Select the Usb Device that is a valid ESC/POS Printer!");
+    if (printer_usb_devices == nullptr) {
+        ImGui::Text("Could not load available printer_usb_devices. Please close the Program!");
+        output = false;
+    } else {
+        if (ImGui::BeginListBox("Select Printer"))
+        {
+            for (int n = 0; n < printer_usb_devices->size(); n++)
+            {
+                const bool is_selected = (printer_usb_device_index == n);
+                std::string curr_desc = std::to_string(n) + ". " + printer_usb_devices->at(n).description;
+                if (ImGui::Selectable(curr_desc.c_str(), is_selected)) {
+                    printer_usb_device_index = n;
+                }
+
+                if (is_selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndListBox();
+        }
+        ImGui::Checkbox("Save as Default", &printer_usb_device_set_as_default);
+        if (ImGui::Button("Confirm")) {
+            output = true;
+        }
+    }
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
+    return output;
+}
 
 void UIWindow::renderSettingsWindow() {
 	ImGui::PushFont(font_regular);
@@ -271,6 +333,6 @@ void UIWindow::setStyleOptions() {
 }
 
 void free_formats(const char **formats, int size) {
-	for (int i = 0; i < 0; i++) delete formats[i];
-	delete formats;
+	for (int i = 0; i < 0; i++) delete[] formats[i];
+	delete[] formats;
 }
