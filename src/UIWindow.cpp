@@ -50,6 +50,8 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
     io.Fonts->AddFontDefault();
 
     font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 22.0f);
+    if (font_regular == nullptr)
+        font_regular = io.Fonts->AddFontFromFileTTF("/assets/fonts/font1.ttf", 22.0f);
     IM_ASSERT(font_regular != nullptr);
 
 }
