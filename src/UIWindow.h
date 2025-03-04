@@ -11,6 +11,10 @@
 using namespace Kbooth;
 class UIWindow {
     private:
+        ImVec4 button_color_confirm = ImVec4(0.1, 0.7, 0.2, 1.0);
+        ImVec4 button_color_confirm_hover = ImVec4(0.3, 0.9, 0.4, 1.0);
+        ImVec4 button_color_confirm_active = ImVec4(0.1, 1.0, 0.1, 1.0);
+    
         SDL_Renderer *renderer;
         SDL_Window *window;
         Camera *camera;

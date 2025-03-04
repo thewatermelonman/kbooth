@@ -49,8 +49,9 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
 
     io.Fonts->AddFontDefault();
 
-    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 18.0f);
+    font_regular = io.Fonts->AddFontFromFileTTF("../assets/fonts/font1.ttf", 22.0f);
     IM_ASSERT(font_regular != nullptr);
+
 }
 
 UIWindow::~UIWindow() {
@@ -110,7 +111,9 @@ bool UIWindow::renderStartup() {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+    ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowSize(display_size);
+	ImGui::PushFont(font_regular);
     ImGui::Begin("Kbooth - Select Printer", NULL, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
     ImGui::Text("Select the Usb Device that is a valid ESC/POS Printer!");
     if (printer_usb_devices == nullptr) {
@@ -132,11 +135,23 @@ bool UIWindow::renderStartup() {
             ImGui::EndListBox();
         }
         ImGui::Checkbox("Save as Default", &printer_usb_device_set_as_default);
+        if (ImGui::Button("Continue without printer")){
+            settings->print_settings.print_images = false;
+            output = true;
+        } 
+        ImVec2 buttons_size = ImGui::CalcTextSize("Continue without printer  Confirm");
+        if (buttons_size.x < display_size.x * 0.7f) ImGui::SameLine(0.0f, (display_size.x * 0.7f) - buttons_size.x);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, button_color_confirm);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color_confirm_hover);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color_confirm_active);
         if (ImGui::Button("Confirm")) {
             output = true;
         }
+        ImGui::PopStyleColor(3);
     }
     ImGui::End();
+    ImGui::PopFont();
     ImGui::Render();
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
     return output;
