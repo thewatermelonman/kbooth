@@ -7,10 +7,10 @@ Tested with
 - [SDL3](https://wiki.libsdl.org/SDL3) Sam Lantinga
 - [SDLimages](https://wiki.libsdl.org/SDL3_image) Sam Lantinga 
 - [SDLttf](https://wiki.libsdl.org/SDL3_ttf) Sam Lantinga
-- [Dear ImGui](ttps://github.com/ocornut/imgui) Omar Cornut
-- [libdither](ttps://github.com/robertkist/libdither) Robert Kist
-- [libusb](ttps://libusb.info/)
-- [simpleini](ttps://github.com/brofield/simpleini) Brodie Thiesfield
+- [Dear ImGui](https://github.com/ocornut/imgui) Omar Cornut
+- [libdither](https://github.com/robertkist/libdither) Robert Kist
+- [libusb](https://libusb.info/)
+- [simpleini](https://github.com/brofield/simpleini) Brodie Thiesfield
 
 # Build
 
