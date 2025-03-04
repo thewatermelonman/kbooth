@@ -5,8 +5,8 @@ Tested with
 
 # External Libraries
 - SDL3 -  [https://wiki.libsdl.org/SDL3] Sam Lantinga
-- SDLimages - [https://wiki.libsdl.org/SDL3_ttf] Sam Lantinga 
-- SDLttf -  [https://wiki.libsdl.org/SDL3_image] Sam Lantinga
+- SDLimages - [https://wiki.libsdl.org/SDL3_image] Sam Lantinga 
+- SDLttf -  [https://wiki.libsdl.org/SDL3_ttf] Sam Lantinga
 - Dear ImGui - [https://github.com/ocornut/imgui] Omar Cornut
 - libdither - [https://github.com/robertkist/libdither] Robert Kist
 - libusb - [https://libusb.info/]
@@ -16,6 +16,7 @@ Tested with
 
 ```bash
 git clone --recurse-submodules --shallow-submodules https://github.com/thewatermelonman/kbooth.git
+cd kbooth
 ```
 
 ```bash
@@ -26,4 +27,6 @@ git clone --recurse-submodules --shallow-submodules https://github.com/thewaterm
 
 ## Requirements:
 - cmake
+- freetype 
+``` -DFREETYPE_INCLUDE_DIRS=<your-freetype-dir> -DFREETYPE_LIBRARY=<your-freetype-lib>```
 - libusb
