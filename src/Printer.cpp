@@ -61,6 +61,9 @@ bool Printer::init() {
         std::cerr << "Failed to get device list: " << libusb_error_name(static_cast<int>(count)) << std::endl;
         return false;
     }
+    if (count == 0) {
+        
+    }
 
     bool success = false;
     for (ssize_t i = 0; i < count; i++) {

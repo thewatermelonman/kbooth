@@ -30,11 +30,18 @@ UsbDevice default_printer;
 bool default_printer_configured;
 Settings settings;
 CSimpleIniA ini;
+bool logger = true;
 
+void LOG(std::string msg) {
+    if (!logger) return;
+	std::cout << "[LOG] " << msg << std::endl;
+}
 int main() {
-	std::cout << "STARTING >> KBOOTH <<" << std::endl;
+    LOG("STARTING >> KBOOTH <<");
 	load_settings_config();
+    LOG("Loaded config");
     initializePrinter();   
+    LOG("Initialized Printer");
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_CAMERA)) {
         EXIT_WITH_ERROR("could not initialize SDL.");
@@ -51,6 +58,7 @@ int main() {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_ShowWindow(window);
+    LOG("Initialized SDL");
     {
         Camera camera;
         if (!camera.open(0, 0)) {
@@ -71,6 +79,7 @@ int main() {
             ui.openSelectedPrinterUsbDevice(&printer, &ini);
         }
 
+        LOG("STARTING RENDER LOOP");
         while (!window_should_close) { // Main Loop
             SDL_SetRenderDrawColorFloat(renderer, 0.0, 0.0, 0.0, 1.0);
             SDL_RenderClear(renderer);
@@ -119,12 +128,9 @@ void load_settings_config() {
             .landscape = true
         },
 		.capture_button = SDLK_SPACE, 
+        .optimize_rasp_pi = true,
 	};
 	int err = ini.LoadFile("../assets/settings/config.ini"); 
-    if (err < 0) { // assuming run from build directory
- 		std::cout << "No settings file found in ./assets."<< std::endl;
-		err = ini.LoadFile("./assets/settings/config.ini");
-	}
     if (err < 0) {
  		std::cout << "No settings file found. Running with default."<< std::endl;
 	} else {
@@ -152,6 +158,7 @@ void load_settings_config() {
 		settings.print_settings.usb_port = (int) ini.GetLongValue("config", "PrinterUsbPort", 7);
 		settings.countdown.len = (int) ini.GetLongValue("config", "CountdownLen", 3);
 		settings.countdown.pace = (int) ini.GetLongValue("config", "CountdownPace", 1500);
+        settings.optimize_rasp_pi = (bool) ini.GetBoolValue("config", "OptimizeRaspPI", true, NULL);
 
 	}
 	bool created_output_folder_dir = createDirectory(settings.print_settings.save_folder.c_str());

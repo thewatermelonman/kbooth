@@ -5,10 +5,13 @@
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include "SimpleIni.h"
+#include <filesystem>
 
+namespace fs = std::filesystem;
 
 using namespace Kbooth;
 
@@ -21,6 +24,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
 	//get available cameras
 	cameras = this->camera->getAvailCameraNames(&cameras_size);
 	camera_index = 0;
+    camera->setFontColor(countdown_color);
 
 	//get available formats for the first (default) camera
 	formats = this->camera->getAvailFormatNames(camera_index, &formats_size);
@@ -34,6 +38,15 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
 
     printer_usb_device_index = 0;
     printer_usb_device_set_as_default = false;
+
+    if (settings->optimize_rasp_pi) {
+        std::cout << "[Raspberry Pi Optimization] Running with Font Oversampling = 1" << std::endl;
+        ImFontConfig fontConfig;
+        fontConfig.OversampleH = 1;
+        fontConfig.OversampleV = 1;
+    } else {
+        std::cout << "[No Raspberry Pi Optimization!] Running with default Font." << std::endl;
+    }
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -154,6 +167,38 @@ bool ButtonCircle(const char* label, const ImVec2& size_arg, ImGuiButtonFlags fl
 
     IMGUI_TEST_ENGINE_ITEM_INFO(id, label, g.LastItemData.StatusFlags);
     return pressed;
+}
+
+void UIWindow::fontSelector() {
+    static std::string directory = "../assets/fonts/";
+    static std::vector<std::string> fontFiles;
+    static int selectedItem = 0;
+
+    // Populate fontFiles only once
+    if (fontFiles.empty()) {
+        for (const auto& entry : fs::directory_iterator(directory)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".ttf") {
+                fontFiles.push_back(entry.path().filename().string());
+            }
+        }
+    }
+    if (ImGui::BeginCombo("Select Font", fontFiles.empty() ? "No Fonts Found" : fontFiles[selectedItem].c_str())) {
+        for (size_t i = 0; i < fontFiles.size(); ++i) {
+            bool isSelected = (selectedItem == static_cast<int>(i));
+            if (ImGui::Selectable(fontFiles[i].c_str(), isSelected)) {
+                selectedItem = static_cast<int>(i);
+                camera->setFont(fontFiles[i].c_str());
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+            
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::ColorEdit4("Countdown Color", countdown_color)) {
+        camera->setFontColor(countdown_color);
+    }
 }
 
 void UIWindow::renderGlobalButtons() {
@@ -333,11 +378,14 @@ void UIWindow::renderSettingsWindow() {
                 settings->countdown.pace = (int) (pace * 1000);
             }
 
+            fontSelector();
+
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Printing")) {
 
             ImGui::Checkbox("Save Images", &settings->print_settings.save_images);
+            ImGui::BeginDisabled(!settings->print_settings.print_images);
             ImGui::Checkbox("Print Images", &settings->print_settings.print_images);
 
             if (ImGui::RadioButton("Landscape", settings->print_settings.landscape)) { settings->print_settings.landscape = true; } ImGui::SameLine();
@@ -345,6 +393,7 @@ void UIWindow::renderSettingsWindow() {
 
             ImGui::SliderFloat("Image Brightness", &settings->print_settings.brightness, 20.0f, 40.0f, "");
             ImGui::SliderFloat("Image Contrast", &settings->print_settings.contrast, 140.0f, 60.0f, "");
+            if (!settings->print_settings.print_images) ImGui::EndDisabled();
 
             ImGui::EndTabItem();
         }

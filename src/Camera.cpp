@@ -21,9 +21,28 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
-    char font[] = "../assets/fonts/font1.ttf";
+    char font[] = "../assets/fonts/SimplyMono-Bold.ttf";
     countdown_font = TTF_OpenFont(font, 500);
     countdown_border_font = TTF_OpenFont(font, 500);
+    TTF_SetFontOutline(countdown_border_font, 1);
+}
+
+void Camera::setFontColor(float *color) {
+    countdown_color = {
+        .r = static_cast<Uint8>(color[0] * 255), 
+        .g = static_cast<Uint8>(color[1] * 255), 
+        .b = static_cast<Uint8>(color[2] * 255), 
+        .a = static_cast<Uint8>(color[3] * 255), 
+    };
+}
+
+void Camera::setFont(const char *font_file) {
+    std::string font_path = "../assets/fonts/";
+    font_path += font_file;
+    TTF_CloseFont(countdown_font);
+    TTF_CloseFont(countdown_border_font);
+    countdown_font = TTF_OpenFont(font_path.c_str(), 500);
+    countdown_border_font = TTF_OpenFont(font_path.c_str(), 500);
     TTF_SetFontOutline(countdown_border_font, 1);
 }
 
@@ -50,8 +69,9 @@ void Camera::cleanup() {
 }
 
 Camera::~Camera() {
-	cleanup();
+    TTF_CloseFont(countdown_border_font);
     TTF_CloseFont(countdown_font);
+	cleanup();
 	std::cout << "Closing Camera Resources" << std::endl;
 }
 
@@ -185,12 +205,11 @@ void Camera::setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y) 
 }
 
 void Camera::createCountdownTexture(SDL_Renderer *renderer) {
-    SDL_Color cd_color = {.r = 255, .g = 255, .b = 255, .a = 255};
     SDL_Surface *cd_surface = TTF_RenderGlyph_Blended(
         countdown_font, 
         (Uint32) (48 + countdown.position), 
-        cd_color); 
-    cd_color = {.r = 0, .g = 0, .b = 0, .a = 255};
+        countdown_color); 
+    SDL_Color cd_color = {.r = 255, .g = 255, .b = 255, .a = 255};
     SDL_Surface *cd_border_surface = TTF_RenderGlyph_Blended(
         countdown_border_font, 
         (Uint32) (48 + countdown.position), 
@@ -217,7 +236,7 @@ void Camera::renderCountdown(SDL_Renderer *renderer) {
     }
     int win_w, win_h;
     SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-    float relative_font_scale = 0.5f + countdown.progression * 0.4f;
+    float relative_font_scale = 0.5f + countdown.progression * 0.9f;
     SDL_FRect d;
     d.h = win_h * relative_font_scale;
     d.w = win_h * (float) countdown_texture->w / countdown_texture->h * relative_font_scale;
@@ -311,6 +330,7 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Settings *settings) {
 	float inverse_lerp = 1.0f - (ms_since_zero / (float) settings->countdown.pace);
 	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
 	new_frame.pos_y = -1.0f + inverse_lerp * 2;
+	new_frame.pos_y = - new_frame.pos_y; 
 	return renderTexture(renderer, capture_texture, &new_frame, false);
 }
 

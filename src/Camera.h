@@ -35,6 +35,7 @@ namespace Kbooth {
 
 		int image_count;
         CountdownState countdown;
+        SDL_Color countdown_color;
         
 
 		void cleanup(); // closes all resources
@@ -42,6 +43,8 @@ namespace Kbooth {
     public:
         Camera();
         ~Camera();
+        void setFont(const char *font_file);
+        void setFontColor(float *color);
 
         bool open(int device, int format_index);
         void setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y);

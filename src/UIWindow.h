@@ -23,6 +23,7 @@ class UIWindow {
         ImVec4 kbooth_secondary_color = ImVec4(0.1, 0.2, 0.3, 1.0f);        
         ImVec4 kbooth_secondary_color_hovered = ImVec4(0.2, 0.3, 0.4, 1.0f);
         ImVec4 kbooth_bg_color = ImVec4(0.0, 0.1, 0.2, 1.0);
+        float countdown_color[4] = {kbooth_primary_color.x, kbooth_primary_color.y, kbooth_primary_color.z, 1.0};
     
         SDL_Renderer *renderer;
         SDL_Window *window;
@@ -52,6 +53,7 @@ class UIWindow {
         // Methods
         void setStyleOptions();
         void renderSettingsWindow();
+        void fontSelector();
     public:
         UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *settings,
                  Camera *camera, std::vector<UsbDevice> *usb_devices);

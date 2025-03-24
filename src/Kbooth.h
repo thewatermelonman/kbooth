@@ -40,6 +40,7 @@ namespace Kbooth
 		CountdownSettings countdown;
         PrintSettings print_settings;
 		Uint32 capture_button; // Button that triggers image Capture
+        bool optimize_rasp_pi;
     };
 
     struct UsbDevice {
