@@ -37,6 +37,7 @@ class UIWindow {
         // Settings
         Settings *settings;
         ImVec2 settings_window_size;
+        bool settings_window_size_set;
 
         std::vector<UsbDevice> *printer_usb_devices;
         int printer_usb_device_index;

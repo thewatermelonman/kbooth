@@ -75,6 +75,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
     IM_ASSERT(font_regular != nullptr);
 
     settings_window_size = ImGui::GetIO().DisplaySize * ImVec2(0.7f, 0.7f);
+    settings_window_size_set = false;
 }
 
 UIWindow::~UIWindow() {
@@ -213,6 +214,7 @@ void UIWindow::renderGlobalButtons() {
                  ImGuiWindowFlags_NoResize);
     if (ImGui::Button("Settings")) {
         settings_opened = !settings_opened;
+        settings_window_size_set = false;
         alpha = 0.96;
         settings_window_size = ImGui::GetIO().DisplaySize * ImVec2(0.7f, 0.7f);
     }
@@ -299,7 +301,12 @@ bool UIWindow::renderStartup() {
 
 void UIWindow::renderSettingsWindow() {
 	ImGui::PushFont(font_regular);
-    ImGui::SetWindowSize(settings_window_size);
+    if (!settings_window_size_set) {
+        auto pos = ImGui::GetIO().DisplaySize / 10;
+        ImGui::SetNextWindowPos(pos);
+        ImGui::SetNextWindowSize(settings_window_size);
+        settings_window_size_set = true;
+    }
 	ImGui::Begin("Kbooth  |><|  Settings", &settings_opened);
     
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
