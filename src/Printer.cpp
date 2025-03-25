@@ -247,8 +247,8 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
     std::chrono::duration<double, std::milli> after_copy = std::chrono::high_resolution_clock::now() - start; // DELETE
     uint8_t *out_image = (uint8_t*)calloc(w * h, sizeof(uint8_t));
     ErrorDiffusionMatrix *em = get_shiaufan3_matrix();
-    // error_diffusion_dither(dither_image, em, false, 0.0, out_image);
-    dbs_dither(dither_image, 3, out_image);
+    error_diffusion_dither(dither_image, em, false, 0.0, out_image);
+    // dbs_dither(dither_image, 3, out_image);
     std::chrono::duration<double, std::milli> after_dither = std::chrono::high_resolution_clock::now() - start; // DELETE
     printDitheredImage(out_image, dither_image->width, dither_image->height);
     ErrorDiffusionMatrix_free(em);
