@@ -6,6 +6,7 @@
 #include "EscPosCommands.h"
 #include "SDL3/SDL.h"
 #include "libdither.h"
+#include <chrono>
 #include <string>
 
 using namespace Kbooth;
@@ -142,6 +143,7 @@ Printer::~Printer() {
 }
 
 int Printer::send_command(std::vector<unsigned char> command) {
+    return 0; //DELETE
 	int actual_len;
 	unsigned char ENDPOINT = 0x01;
 	int err = libusb_bulk_transfer(handle, 
@@ -179,11 +181,10 @@ void Printer::printDitheredImage(uint8_t *image, int width, int height) {
     unsigned char xH = (unsigned char) (width_char / 256);
 	int x_num = 0;
 	int y_num = 0;
-    std::string total = {'\x1d', '\x76', '\x30', '\x00'};
-	total += xL;
-	total += xH;
-	total += yL;
-	total += yH;
+    std::vector<unsigned char> total = {
+        '\x1d', '\x76', '\x30', '\x00',
+        xL, xH, yL, yH
+    };
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width;) {
 			char d_k = 0;
@@ -192,13 +193,12 @@ void Printer::printDitheredImage(uint8_t *image, int width, int height) {
 					d_k |= (1 << (7 - c));
 				}
 			}
-			total += d_k;
+			total.push_back(d_k);
 			if (y == 0) x_num++;
 		}
 		y_num++;
 	}
-	std::vector<unsigned char> data(total.begin(), total.end());
-    send_command(data);
+    send_command(total);
     send_command(ESC_Two);
 	send_command(ESC_LF);
 	send_command(ESC_J);
@@ -208,6 +208,9 @@ void Printer::printDitheredImage(uint8_t *image, int width, int height) {
 }
 
 void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print_set) {
+    auto start = std::chrono::high_resolution_clock::now(); // DELETE
+    std::chrono::duration<double, std::milli> start_b = std::chrono::high_resolution_clock::now() - start; // DELETE
+    std::chrono::duration<double, std::milli> start_c = std::chrono::high_resolution_clock::now() - start; // DELETE
     int w, h;
     SDL_Surface *scaled_surface;
     DitherImage* dither_image;
@@ -241,14 +244,24 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
             }
         }
     }
+    std::chrono::duration<double, std::milli> after_copy = std::chrono::high_resolution_clock::now() - start; // DELETE
     uint8_t *out_image = (uint8_t*)calloc(w * h, sizeof(uint8_t));
-    ErrorDiffusionMatrix *em = get_shiaufan3_matrix();
-    // error_diffusion_dither(dither_image, em, false, 0.0, out_image);
-    dbs_dither(dither_image, 3, out_image);
+    ErrorDiffusionMatrix *em = get_robert_kist_matrix();
+    error_diffusion_dither(dither_image, em, false, 0.0, out_image);
+    // dbs_dither(dither_image, 3, out_image);
+    std::chrono::duration<double, std::milli> after_dither = std::chrono::high_resolution_clock::now() - start; // DELETE
     printDitheredImage(out_image, dither_image->width, dither_image->height);
     ErrorDiffusionMatrix_free(em);
     free(out_image);
     SDL_DestroySurface(scaled_surface);
+    std::chrono::duration<double, std::milli> after_printing = std::chrono::high_resolution_clock::now() - start; // DELETE
+    std::cout << 
+        "imediatly after start: " << start_b.count() << std::endl <<
+        "imediatly after start: " << start_c.count() << std::endl <<
+        "after copy: " << after_copy.count() << std::endl <<
+        "after dither: " << after_dither.count() << std::endl <<
+        "after print: " << after_printing.count() << std::endl <<
+        std::endl; // DELETE
 }
 
 
