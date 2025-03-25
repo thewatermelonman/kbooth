@@ -28,6 +28,7 @@ SDL_Renderer *renderer = nullptr;
 Printer printer;
 UsbDevice default_printer;
 bool default_printer_configured;
+int camera_format_index;
 Settings settings;
 CSimpleIniA ini;
 bool logger = true;
@@ -61,7 +62,7 @@ int main() {
     LOG("Initialized SDL");
     {
         Camera camera;
-        if (!camera.open(0, 0)) {
+        if (!camera.open(0, camera_format_index)) {
         	EXIT_WITH_ERROR("Could not open Default Camera.");
         }
         camera.setAspectRatio(renderer, settings.framing.aspect_x, settings.framing.aspect_y);
@@ -159,6 +160,7 @@ void load_settings_config() {
 		settings.countdown.len = (int) ini.GetLongValue("config", "CountdownLen", 3);
 		settings.countdown.pace = (int) ini.GetLongValue("config", "CountdownPace", 1500);
         settings.optimize_rasp_pi = (bool) ini.GetBoolValue("config", "OptimizeRaspPI", true, NULL);
+        camera_format_index = (int) ini.GetLongValue("config", "CameraFormatIndex", 0);
 
 	}
 	bool created_output_folder_dir = createDirectory(settings.print_settings.save_folder.c_str());
