@@ -103,7 +103,13 @@ void UIWindow::render() {
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.Alpha = alpha;
-    if (settings_opened) renderSettingsWindow();
+    if (settings_opened) {
+        ImVec2 display_size = ImGui::GetIO().DisplaySize;
+        ImGui::SetNextWindowSize(display_size / 4);
+        ImGui::SetNextWindowPos(display_size / 8);
+
+        renderSettingsWindow();
+    }
     style.Alpha = 1.0f;
     if (ui_visible) renderGlobalButtons();
 
@@ -300,7 +306,7 @@ bool UIWindow::renderStartup() {
 void UIWindow::renderSettingsWindow() {
 	ImGui::PushFont(font_regular);
     ImGui::SetWindowSize(settings_window_size);
-	ImGui::Begin("Kbooth  |><|  Settings", &settings_opened);
+	ImGui::Begin("Kbooth  |><|  Settings", &settings_opened, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
     
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
     if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags)) {
