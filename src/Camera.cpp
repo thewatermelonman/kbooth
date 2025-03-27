@@ -330,10 +330,18 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Settings *settings) {
  	Framing new_frame = {.zoom = 0.8, .pos_x = 0.0, .pos_y = 0.0, .mirror = false, .rotation = 0.0f};
     float ms_since_start = SDL_GetTicks() - countdown.start_time;
 	float ms_since_zero = (float) (ms_since_start - ((settings->countdown.len) * settings->countdown.pace));
-	float inverse_lerp = 1.0f - (ms_since_zero / (float) settings->countdown.pace);
-	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
-	new_frame.pos_y = 0.0f - inverse_lerp * 2;
-	return renderTexture(renderer, capture_texture, &new_frame, false);
+	float inverse_lerp = (ms_since_zero / (float) (settings->countdown.pace * 2));
+	new_frame.zoom = 1.0 - (inverse_lerp * 0.5);
+        //std::max(1.0 - inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
+	new_frame.pos_y = inverse_lerp * 4;
+    
+    bool err = !renderTexture(renderer, capture_texture, &new_frame, false);
+    if (err) return err;
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, inverse_lerp * 255);
+    err = SDL_RenderFillRect(renderer, NULL);
+    if (err) return err;
+    return false;
 }
 
 bool Camera::renderTexture(
