@@ -14,6 +14,7 @@
 
 using namespace Kbooth;
 
+
 Camera::Camera() : 
 	texture(nullptr),
 	capture_texture(nullptr),
@@ -21,7 +22,7 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
-    char font[] = "../assets/fonts/SimplyMono-Bold.ttf";
+    char font[] = "../assets/fonts/SimplyMono-Bold.ttf"; // default font
     countdown_font = TTF_OpenFont(font, 500);
     countdown_border_font = TTF_OpenFont(font, 500);
     TTF_SetFontOutline(countdown_border_font, 1);
@@ -44,6 +45,70 @@ void Camera::setFont(const char *font_file) {
     countdown_font = TTF_OpenFont(font_path.c_str(), 500);
     countdown_border_font = TTF_OpenFont(font_path.c_str(), 500);
     TTF_SetFontOutline(countdown_border_font, 1);
+}
+
+const char ** Camera::getAvailCameraNames(int *size) {
+	const char ** camera_names = new const char*[cameras_size];
+    for (int i = 0; i < cameras_size; i++) {
+		camera_names[i] = SDL_GetCameraName(cameras[i]);
+	}
+	*size = cameras_size;
+	return camera_names;
+}
+
+void Camera::setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y) {
+        frame = {0};
+        framing_bar_start = {0};
+        framing_bar_end = {0};
+		int win_w, win_h;
+		SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+        float aspect_win = ((float) win_w) / win_h;
+        float aspect_frame = ((float) aspect_x) / aspect_y;
+        if (aspect_frame > aspect_win) {
+            frame.x = 0;
+            frame.w = win_w;
+            frame.y = (int) ((win_h - win_w / aspect_frame) / 2.0f);
+            frame.h = (int) (win_w / aspect_frame);
+            framing_bar_start.h = (win_h - frame.h) / 2.0f;
+            framing_bar_start.w = win_w;
+            framing_bar_end.x = 0;
+            framing_bar_end.y = frame.h + frame.y;
+        } else {
+            frame.y = 0;
+            frame.h = win_h;
+            frame.x = (int) ((win_w - win_h * aspect_frame) / 2.0f);
+            frame.w = (int) (win_h * aspect_frame);
+            framing_bar_start.w = (win_w - frame.w) / 2.0f;
+            framing_bar_start.h = win_h;
+            framing_bar_end.y = 0;
+            framing_bar_end.x = frame.w + frame.x;
+        }
+        framing_bar_start.x = 0;
+        framing_bar_start.y = 0;
+        framing_bar_end.w = framing_bar_start.w;
+        framing_bar_end.h = framing_bar_start.h;
+}
+
+const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
+    SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(cameras[camera_index], formats_size);
+    const char **specs_description = new const char*[*formats_size];
+
+    for (int i = 0; i < *formats_size; i++) {
+        float framerate = (float) specs[i]->framerate_numerator / specs[i]->framerate_denominator;
+        std::stringstream description_stream;
+        description_stream << specs[i]->width << "x" << specs[i]->height
+                          << " " << framerate << "fps (" << specs[i]->colorspace << ")";
+
+        std::string description = description_stream.str();
+        specs_description[i] = new char[description.size() + 1];
+        strcpy(const_cast<char*>(specs_description[i]), description.c_str());
+    }
+    SDL_free(specs);
+    return specs_description;
+}
+
+int Camera::getOpendedCameraID() {
+	return SDL_GetCameraID(camera);
 }
 
 void Camera::cleanup() {
@@ -121,37 +186,6 @@ bool Camera::open(int camera_index, int format_index) {
     return false;
 }
 
-int Camera::getOpendedCameraID() {
-	return SDL_GetCameraID(camera);
-}
-
-const char ** Camera::getAvailCameraNames(int *size) {
-	const char ** camera_names = new const char*[cameras_size];
-    for (int i = 0; i < cameras_size; i++) {
-		camera_names[i] = SDL_GetCameraName(cameras[i]);
-	}
-	*size = cameras_size;
-	return camera_names;
-}
-
-const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
-    SDL_CameraSpec **specs = SDL_GetCameraSupportedFormats(cameras[camera_index], formats_size);
-    const char **specs_description = new const char*[*formats_size];
-
-    for (int i = 0; i < *formats_size; i++) {
-        float framerate = (float) specs[i]->framerate_numerator / specs[i]->framerate_denominator;
-        std::stringstream description_stream;
-        description_stream << specs[i]->width << "x" << specs[i]->height
-                          << " " << framerate << "fps (" << specs[i]->colorspace << ")";
-
-        std::string description = description_stream.str();
-        specs_description[i] = new char[description.size() + 1];
-        strcpy(const_cast<char*>(specs_description[i]), description.c_str());
-    }
-    SDL_free(specs);
-    return specs_description;
-}
-
 void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {
     if (print_set->save_images) {
 		std::string filename = print_set->save_folder + "/"; 
@@ -171,38 +205,6 @@ void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {
 	}
 }
 
-void Camera::setAspectRatio(SDL_Renderer *renderer, int aspect_x, int aspect_y) {
-        frame = {0};
-        framing_bar_start = {0};
-        framing_bar_end = {0};
-		int win_w, win_h;
-		SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-        float aspect_win = ((float) win_w) / win_h;
-        float aspect_frame = ((float) aspect_x) / aspect_y;
-        if (aspect_frame > aspect_win) {
-            frame.x = 0;
-            frame.w = win_w;
-            frame.y = (int) ((win_h - win_w / aspect_frame) / 2.0f);
-            frame.h = (int) (win_w / aspect_frame);
-            framing_bar_start.h = (win_h - frame.h) / 2.0f;
-            framing_bar_start.w = win_w;
-            framing_bar_end.x = 0;
-            framing_bar_end.y = frame.h + frame.y;
-        } else {
-            frame.y = 0;
-            frame.h = win_h;
-            frame.x = (int) ((win_w - win_h * aspect_frame) / 2.0f);
-            frame.w = (int) (win_h * aspect_frame);
-            framing_bar_start.w = (win_w - frame.w) / 2.0f;
-            framing_bar_start.h = win_h;
-            framing_bar_end.y = 0;
-            framing_bar_end.x = frame.w + frame.x;
-        }
-        framing_bar_start.x = 0;
-        framing_bar_start.y = 0;
-        framing_bar_end.w = framing_bar_start.w;
-        framing_bar_end.h = framing_bar_start.h;
-}
 
 void Camera::createCountdownTexture(SDL_Renderer *renderer) {
     SDL_Surface *cd_surface = TTF_RenderGlyph_Blended(
@@ -247,10 +249,11 @@ void Camera::renderCountdown(SDL_Renderer *renderer) {
 
 bool Camera::renderFrame(SDL_Renderer *renderer, Settings *settings) {
     if (countdown.position < 1 && countdown.active) {
-        return renderImageCapture(renderer, settings);
+        // render image capture animation 
+        return renderImageCapture(renderer, settings); 
     } else if (countdown.active) {
         bool res = renderCameraFeed(renderer, &settings->framing, true);
-        renderCountdown(renderer);
+        renderCountdown(renderer); // overlay countdown
         return res;
     } else {
         return renderCameraFeed(renderer, &settings->framing, true);
@@ -329,8 +332,7 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Settings *settings) {
 	float ms_since_zero = (float) (ms_since_start - ((settings->countdown.len) * settings->countdown.pace));
 	float inverse_lerp = 1.0f - (ms_since_zero / (float) settings->countdown.pace);
 	new_frame.zoom = std::max(inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
-	new_frame.pos_y = -1.0f + inverse_lerp * 2;
-	new_frame.pos_y = - new_frame.pos_y; 
+	new_frame.pos_y = 0.0f - inverse_lerp * 2;
 	return renderTexture(renderer, capture_texture, &new_frame, false);
 }
 
@@ -373,7 +375,9 @@ bool Camera::renderTexture(
         NULL, 
         framing->mirror ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 
-    if (renderBorder) {
+    if (renderBorder) { 
+        // render the border of what will printed
+        // this is defined by the aspect ratio of print_settings
         SDL_FRect frame_F;
         SDL_RectToFRect(&frame, &frame_F);
         SDL_SetRenderDrawColor(renderer, 219, 23, 137, 255);
