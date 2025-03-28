@@ -59,7 +59,8 @@ namespace Kbooth {
 		const char ** getAvailCameraNames(int *size);
 		const char ** getAvailFormatNames(int camera_index, int *formats_count);
 		int getOpendedCameraID();
-    
+        bool * getCountdownStatus(); 
+
         void startCountdown(CountdownSettings *cd_set);
         bool updateCountdown(CountdownSettings *cd_set);
         void createCountdownTexture(SDL_Renderer *renderer);

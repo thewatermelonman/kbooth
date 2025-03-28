@@ -107,6 +107,11 @@ const char ** Camera::getAvailFormatNames(int camera_index, int *formats_size) {
     return specs_description;
 }
 
+bool * Camera::getCountdownStatus() {
+    return &countdown.active;
+}
+
+
 int Camera::getOpendedCameraID() {
 	return SDL_GetCameraID(camera);
 }
@@ -238,12 +243,13 @@ void Camera::renderCountdown(SDL_Renderer *renderer) {
     }
     int win_w, win_h;
     SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
-    float relative_font_scale = 0.5f + countdown.progression * 0.9f;
+    float relative_font_scale = 0.5f + countdown.progression * countdown.progression * 0.9f;
     SDL_FRect d;
     d.h = win_h * relative_font_scale;
     d.w = win_h * (float) countdown_texture->w / countdown_texture->h * relative_font_scale;
     d.y = (win_h / 2.0f) - (d.h / 2.0f);
     d.x = (win_w / 2.0f) - (d.w / 2.0f);
+    SDL_SetTextureAlphaMod(countdown_texture, (1 - countdown.progression * countdown.progression) * 255);
     SDL_RenderTexture(renderer, countdown_texture, NULL, &d);
 }
 
@@ -331,8 +337,8 @@ bool Camera::renderImageCapture(SDL_Renderer *renderer, Settings *settings) {
     float ms_since_start = SDL_GetTicks() - countdown.start_time;
 	float ms_since_zero = (float) (ms_since_start - ((settings->countdown.len) * settings->countdown.pace));
 	float inverse_lerp = (ms_since_zero / (float) (settings->countdown.pace * 2));
+    inverse_lerp *= inverse_lerp;
 	new_frame.zoom = 1.0 - (inverse_lerp * 0.5);
-        //std::max(1.0 - inverse_lerp * 0.5 + 0.5, 0.7); // zoom out until at 70%
 	new_frame.pos_y = inverse_lerp * 4;
     
     bool err = !renderTexture(renderer, capture_texture, &new_frame, false);

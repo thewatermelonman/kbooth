@@ -51,6 +51,8 @@ class UIWindow {
         int formats_size;
         int format_index;
 
+        bool *countdown_status;
+
         // Methods
         void setStyleOptions();
         void renderSettingsWindow();

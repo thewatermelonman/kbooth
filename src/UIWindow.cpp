@@ -35,6 +35,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
 	ui_visible = true;
 	alpha = 0.96;
 
+    countdown_status = camera->getCountdownStatus();
 
     printer_usb_device_index = 0;
     printer_usb_device_set_as_default = false;
@@ -378,7 +379,7 @@ void UIWindow::renderSettingsWindow() {
             ImGui::EndTabItem();
         }
         if(ImGui::BeginTabItem("Image Capture")) {
-
+            ImGui::BeginDisabled(*countdown_status);
             float pace = settings->countdown.pace / 1000.0;
             ImGui::SliderInt("Countdown Length", &settings->countdown.len, 0, 9, "%d");
             if (ImGui::SliderFloat("Countdown Speed", &pace, 0.8, 3.0, "%.1fsec")) {
@@ -386,7 +387,7 @@ void UIWindow::renderSettingsWindow() {
             }
 
             fontSelector();
-
+            ImGui::EndDisabled();
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Printing")) {
