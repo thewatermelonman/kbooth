@@ -7,3 +7,4 @@ compile_commands.json
 .cache/
 images/
 old_commands.json
+assets/fonts/NOLI_*.ttf
