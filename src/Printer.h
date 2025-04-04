@@ -14,7 +14,6 @@ namespace Kbooth {
         bool initialized = false;
         std::vector<UsbDevice> usb_devices;
 		libusb_device_handle *handle;
-        std::vector<std::vector<bool>> logo_image;
 
 		int send_command(std::vector<unsigned char> command);
 		int cut();
@@ -28,9 +27,6 @@ namespace Kbooth {
 
         void printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print_set);
 		void printDitheredImage(uint8_t *image, int width, int height);
-
-        void printBitmap(std::vector< std::vector<bool> > &bitmap);
-        std::vector<std::vector<bool>> loadImage(std::string filename);
 
 		~Printer();	
     };

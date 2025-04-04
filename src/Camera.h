@@ -24,6 +24,7 @@ namespace Kbooth {
         SDL_Texture *texture;
         SDL_Texture *capture_texture;
 		SDL_Surface *capture_surface;
+		SDL_Surface *logo_image;
 
         TTF_Font *countdown_font;
         TTF_Font *countdown_border_font;

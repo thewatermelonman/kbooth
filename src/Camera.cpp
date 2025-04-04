@@ -26,6 +26,10 @@ Camera::Camera() :
     countdown_font = TTF_OpenFont(font, 800);
     countdown_border_font = TTF_OpenFont(font, 800);
     TTF_SetFontOutline(countdown_border_font, 8);
+    logo_image = IMG_Load("./logo.jpg");
+    if (logo_image == NULL) {
+        std::cout << SDL_GetError() << std::endl;
+    }
 }
 
 void Camera::setFontColor(float *color) {
@@ -141,6 +145,7 @@ void Camera::cleanup() {
 Camera::~Camera() {
     TTF_CloseFont(countdown_border_font);
     TTF_CloseFont(countdown_font);
+    SDL_DestroySurface(logo_image);
 	cleanup();
 	std::cout << "Closing Camera Resources" << std::endl;
 }
@@ -197,8 +202,30 @@ void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {
         filename += getDateAndTime() + "_" + std::to_string(++image_count) + ".jpg";
         IMG_SaveJPG(capture_surface, filename.c_str(), 100);
     }
-	if (print_set->print_images && capture_surface != nullptr) {
-        printer->printSdlSurface(capture_surface, print_set);
+	if (!print_set->print_images && capture_surface != nullptr && logo_image != nullptr) {
+        float scale = (float) capture_surface->w / logo_image->w;
+        SDL_Surface *logo_surf = SDL_CreateSurface(
+            capture_surface->w,
+            capture_surface->h + logo_image->h * scale,
+            capture_surface->format
+        );
+
+        SDL_Rect capt_r = {
+            .x = 0, .y = 0,
+            .w = capture_surface->w, .h = capture_surface->h
+        };
+
+        SDL_Rect logo_r = {
+            .x = 0, .y = capture_surface->h,
+            .w = (int) (logo_image->w * scale), .h = (int) (logo_image->h * scale)
+        };
+
+        SDL_BlitSurface(capture_surface, NULL, logo_surf, &capt_r);
+        SDL_BlitSurfaceScaled(logo_image, NULL, logo_surf, &logo_r, SDL_SCALEMODE_NEAREST);
+        printer->printSdlSurface(logo_surf, print_set);
+        IMG_SaveJPG(logo_surf, "images/test.jpg", 100);
+        SDL_DestroySurface(logo_surf);
+        
 	}
 	if (capture_texture != nullptr) {
 		SDL_DestroyTexture(texture);

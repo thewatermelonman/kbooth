@@ -17,29 +17,6 @@ int brightnessContrast(float b, float c, float x) {
     return (int) std::min(255.0f, y);
 }
 
-std::vector<std::vector<bool>> Printer::loadImage(std::string filename){
-    int width, height, channels;
-    stbi_uc *result = stbi_load(filename.c_str(), &width, &height, &channels, 3);
-
-    std::cout << "LOG " << result << std::endl;
-
-    std::vector< std::vector<bool> > image(height, std::vector<bool>(width, 0));
-    for(int i = 0; i < width; i++){
-        for(int j = 0; j < height; j++){
-            // For each pixel, we will use the Luminosity method:
-            // -> (0.3 * R) + (0.59 * G) + (0.11 * B)
-            float grayscale = result[3*i + width*j*3] * 0.3;
-            grayscale += result[3*i +1 + width*j*3] * 0.59;
-            grayscale += result[3*i +2 + width*j*3] * 0.11;
-            image[j][i] = grayscale < 150 ;
-            //image[j][i] = result[3*i + width*j*3] > (unsigned char) 150;
-        }
-    }
-    stbi_image_free(result);
-
-    return image;
-}
-
 bool Printer::initAndOpen(UsbDevice *default_dev) {
     std::cout << "HERE I AM" << std::endl;
     ctx = nullptr;
@@ -65,7 +42,6 @@ bool Printer::initAndOpen(UsbDevice *default_dev) {
 		return false;
 	}
 
-    logo_image = loadImage("../assets/images/logo.jpeg");
 	return true;
 }
 
@@ -153,8 +129,6 @@ bool Printer::open(UsbDevice& dev) {
 		libusb_close(handle);
 		return false;
 	}
-
-    logo_image = loadImage("../assets/images/logo.jpeg");
 	return true;
 }
 
@@ -229,11 +203,6 @@ void Printer::printDitheredImage(uint8_t *image, int width, int height) {
     send_command(ESC_Two);
 	send_command(ESC_LF);
 	send_command(ESC_J);
-
-    printBitmap(logo_image);
-
-	send_command(ESC_LF);
-	send_command(ESC_J);
 	cut();
 	std::cout << "AFTER DATA TRANS: " << total.size() << "WxH: " << x_num << "x"  << y_num << std::endl; 
 	std::cout << "xL "<< (int) xL << ", xH "<< (int) xH << ", yL "<< (int) yL << ", yH "<< (int) yH << std::endl; 
@@ -276,52 +245,53 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
     error_diffusion_dither(dither_image, em, false, 0.0, out_image);
     // dbs_dither(dither_image, 3, out_image);
     printDitheredImage(out_image, dither_image->width, dither_image->height);
+    
     ErrorDiffusionMatrix_free(em);
     free(out_image);
     SDL_DestroySurface(scaled_surface);
 }
 
-void Printer::printBitmap(std::vector< std::vector<bool> > &bitmap) {
-	// Quickly check the integrity of the "bitmap"
-    int height = bitmap.size();
-    int width = bitmap[0].size();
-    std::cout << "WIDTHxHEIGHT = " <<  height <<" x" << (width / 8) << " = " << height * (width / 8) << std::endl;
-    for(int i = 1; i < height; i++){
-        if(width != bitmap[i].size()){
-            std::cout << "Error: the bitmap is not squared" << std::endl;
-            throw -1;
-        }
-    }
-	int x_num = 0;
-	int y_num = 0;
-	int width_char = (int) std::ceil((float) width / 8.0f);
-    // First of all, set line height:
-	send_command(ESC_Three);
-	unsigned char yL = (unsigned char) (height % 256);
-	unsigned char yH = (unsigned char) (height / 256);
-    unsigned char xL = (unsigned char) (width_char % 256);
-    unsigned char xH = (unsigned char) (width_char / 256);
-    std::string total = {'\x1d', '\x76', '\x30', '\x00'};
-	total += xL;
-	total += xH;
-	total += yL;
-	total += yH;
-	std::cout << std::dec;
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width;) {
-			char d_k = 0;
-			for (int c = 0; c < 8 && x < width; c++, x++) {
-				if (bitmap[y][x]) {
-					d_k |= (1 << (7 - c));
-				}
-			}
-			total += d_k;
-			if (y == 0) x_num++;
-		}
-		y_num++;
-	}
-	std::vector<unsigned char> data(total.begin(), total.end());
-    send_command(data);
-	std::cout << "AFTER DATA TRANS: " << total.size() << std::endl; 
-    send_command(ESC_Two);
-}
+// void Printer::printBitmap(std::vector< std::vector<bool> > &bitmap) {
+// 	// Quickly check the integrity of the "bitmap"
+//     int height = bitmap.size();
+//     int width = bitmap[0].size();
+//     std::cout << "WIDTHxHEIGHT = " <<  height <<" x" << (width / 8) << " = " << height * (width / 8) << std::endl;
+//     for(int i = 1; i < height; i++){
+//         if(width != bitmap[i].size()){
+//             std::cout << "Error: the bitmap is not squared" << std::endl;
+//             throw -1;
+//         }
+//     }
+// 	int x_num = 0;
+// 	int y_num = 0;
+// 	int width_char = (int) std::ceil((float) width / 8.0f);
+//     // First of all, set line height:
+// 	send_command(ESC_Three);
+// 	unsigned char yL = (unsigned char) (height % 256);
+// 	unsigned char yH = (unsigned char) (height / 256);
+//     unsigned char xL = (unsigned char) (width_char % 256);
+//     unsigned char xH = (unsigned char) (width_char / 256);
+//     std::string total = {'\x1d', '\x76', '\x30', '\x00'};
+// 	total += xL;
+// 	total += xH;
+// 	total += yL;
+// 	total += yH;
+// 	std::cout << std::dec;
+// 	for (int y = 0; y < height; y++) {
+// 		for (int x = 0; x < width;) {
+// 			char d_k = 0;
+// 			for (int c = 0; c < 8 && x < width; c++, x++) {
+// 				if (bitmap[y][x]) {
+// 					d_k |= (1 << (7 - c));
+// 				}
+// 			}
+// 			total += d_k;
+// 			if (y == 0) x_num++;
+// 		}
+// 		y_num++;
+// 	}
+// 	std::vector<unsigned char> data(total.begin(), total.end());
+//     send_command(data);
+// 	std::cout << "AFTER DATA TRANS: " << total.size() << std::endl; 
+//     send_command(ESC_Two);
+// }
