@@ -28,7 +28,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
 
 	//get available formats for the first (default) camera
 	formats = this->camera->getAvailFormatNames(camera_index, &formats_size);
-	format_index = 0;
+    format_index = settings->camera_format_index;
 
 	// settings window
 	settings_opened = false;

@@ -23,9 +23,9 @@ Camera::Camera() :
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
     char font[] = "../assets/fonts/SimplyMono-Bold.ttf"; // default font
-    countdown_font = TTF_OpenFont(font, 500);
-    countdown_border_font = TTF_OpenFont(font, 500);
-    TTF_SetFontOutline(countdown_border_font, 1);
+    countdown_font = TTF_OpenFont(font, 800);
+    countdown_border_font = TTF_OpenFont(font, 800);
+    TTF_SetFontOutline(countdown_border_font, 8);
 }
 
 void Camera::setFontColor(float *color) {
@@ -42,9 +42,9 @@ void Camera::setFont(const char *font_file) {
     font_path += font_file;
     TTF_CloseFont(countdown_font);
     TTF_CloseFont(countdown_border_font);
-    countdown_font = TTF_OpenFont(font_path.c_str(), 500);
-    countdown_border_font = TTF_OpenFont(font_path.c_str(), 500);
-    TTF_SetFontOutline(countdown_border_font, 1);
+    countdown_font = TTF_OpenFont(font_path.c_str(), 800);
+    countdown_border_font = TTF_OpenFont(font_path.c_str(), 800);
+    TTF_SetFontOutline(countdown_border_font, 8);
 }
 
 const char ** Camera::getAvailCameraNames(int *size) {

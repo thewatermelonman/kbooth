@@ -1,3 +1,4 @@
+
 #ifndef CAMERA_H
 #define CAMERA_H
 
@@ -6,7 +7,7 @@
 #include "Kbooth.h"
 #include "Printer.h"
 namespace Kbooth {
-
+    
     struct CountdownState {
 		bool active;
         bool update; // signals change in position
@@ -43,6 +44,12 @@ namespace Kbooth {
     public:
         Camera();
         ~Camera();
+
+        /**
+         * @brief 
+         *
+         * @param font_file Test
+         */
         void setFont(const char *font_file);
         void setFontColor(float *color);
 

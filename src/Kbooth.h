@@ -41,6 +41,7 @@ namespace Kbooth
         PrintSettings print_settings;
 		Uint32 capture_button; // Button that triggers image Capture
         bool optimize_rasp_pi;
+        int camera_format_index;
     };
 
     struct UsbDevice {
