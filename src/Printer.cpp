@@ -144,7 +144,6 @@ Printer::~Printer() {
 }
 
 int Printer::send_command(std::vector<unsigned char> command) {
-    return 0; //DELETE
 	int actual_len;
 	unsigned char ENDPOINT = 0x01;
 	int err = libusb_bulk_transfer(handle, 

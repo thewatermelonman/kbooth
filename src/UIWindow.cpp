@@ -401,7 +401,7 @@ void UIWindow::renderSettingsWindow() {
 
             ImGui::SliderFloat("Image Brightness", &settings->print_settings.brightness, 20.0f, 40.0f, "");
             ImGui::SliderFloat("Image Contrast", &settings->print_settings.contrast, 140.0f, 60.0f, "");
-            if (!settings->print_settings.print_images) ImGui::EndDisabled();
+            if (settings->print_settings.print_images) ImGui::EndDisabled();
 
             ImGui::EndTabItem();
         }
