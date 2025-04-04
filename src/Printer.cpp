@@ -17,6 +17,29 @@ int brightnessContrast(float b, float c, float x) {
     return (int) std::min(255.0f, y);
 }
 
+std::vector<std::vector<bool>> Printer::loadImage(std::string filename){
+    int width, height, channels;
+    stbi_uc *result = stbi_load(filename.c_str(), &width, &height, &channels, 3);
+
+    std::cout << "LOG " << result << std::endl;
+
+    std::vector< std::vector<bool> > image(height, std::vector<bool>(width, 0));
+    for(int i = 0; i < width; i++){
+        for(int j = 0; j < height; j++){
+            // For each pixel, we will use the Luminosity method:
+            // -> (0.3 * R) + (0.59 * G) + (0.11 * B)
+            float grayscale = result[3*i + width*j*3] * 0.3;
+            grayscale += result[3*i +1 + width*j*3] * 0.59;
+            grayscale += result[3*i +2 + width*j*3] * 0.11;
+            image[j][i] = grayscale < 150 ;
+            //image[j][i] = result[3*i + width*j*3] > (unsigned char) 150;
+        }
+    }
+    stbi_image_free(result);
+
+    return image;
+}
+
 bool Printer::initAndOpen(UsbDevice *default_dev) {
     std::cout << "HERE I AM" << std::endl;
     ctx = nullptr;
@@ -41,6 +64,8 @@ bool Printer::initAndOpen(UsbDevice *default_dev) {
 		libusb_close(handle);
 		return false;
 	}
+
+    logo_image = loadImage("../assets/images/logo.jpeg");
 	return true;
 }
 
@@ -128,6 +153,8 @@ bool Printer::open(UsbDevice& dev) {
 		libusb_close(handle);
 		return false;
 	}
+
+    logo_image = loadImage("../assets/images/logo.jpeg");
 	return true;
 }
 
@@ -202,15 +229,17 @@ void Printer::printDitheredImage(uint8_t *image, int width, int height) {
     send_command(ESC_Two);
 	send_command(ESC_LF);
 	send_command(ESC_J);
+
+    printBitmap(logo_image);
+
+	send_command(ESC_LF);
+	send_command(ESC_J);
 	cut();
 	std::cout << "AFTER DATA TRANS: " << total.size() << "WxH: " << x_num << "x"  << y_num << std::endl; 
 	std::cout << "xL "<< (int) xL << ", xH "<< (int) xH << ", yL "<< (int) yL << ", yH "<< (int) yH << std::endl; 
 }
 
 void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print_set) {
-    auto start = std::chrono::high_resolution_clock::now(); // DELETE
-    std::chrono::duration<double, std::milli> start_b = std::chrono::high_resolution_clock::now() - start; // DELETE
-    std::chrono::duration<double, std::milli> start_c = std::chrono::high_resolution_clock::now() - start; // DELETE
     int w, h;
     SDL_Surface *scaled_surface;
     DitherImage* dither_image;
@@ -228,8 +257,6 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
     w = scaled_surface->w;
     h = scaled_surface->h;
     Uint8 r, g, b;
-    std::cout << "Scale X-Y" << w << "-" << h << std::endl;
-    std::cout << "Dither X-Y" << dither_image->width << "-" << dither_image->height << std::endl;
     for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
             SDL_ReadSurfacePixel(scaled_surface, x, y, &r, &g, &b, NULL);
@@ -244,31 +271,16 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
             }
         }
     }
-    std::chrono::duration<double, std::milli> after_copy = std::chrono::high_resolution_clock::now() - start; // DELETE
     uint8_t *out_image = (uint8_t*)calloc(w * h, sizeof(uint8_t));
     ErrorDiffusionMatrix *em = get_robert_kist_matrix();
     error_diffusion_dither(dither_image, em, false, 0.0, out_image);
     // dbs_dither(dither_image, 3, out_image);
-    std::chrono::duration<double, std::milli> after_dither = std::chrono::high_resolution_clock::now() - start; // DELETE
     printDitheredImage(out_image, dither_image->width, dither_image->height);
     ErrorDiffusionMatrix_free(em);
     free(out_image);
     SDL_DestroySurface(scaled_surface);
-    std::chrono::duration<double, std::milli> after_printing = std::chrono::high_resolution_clock::now() - start; // DELETE
-    std::cout << 
-        "imediatly after start: " << start_b.count() << std::endl <<
-        "imediatly after start: " << start_c.count() << std::endl <<
-        "after copy: " << after_copy.count() << std::endl <<
-        "after dither: " << after_dither.count() << std::endl <<
-        "after print: " << after_printing.count() << std::endl <<
-        std::endl; // DELETE
 }
 
-
-
-
-//unused
-/*
 void Printer::printBitmap(std::vector< std::vector<bool> > &bitmap) {
 	// Quickly check the integrity of the "bitmap"
     int height = bitmap.size();
@@ -313,25 +325,3 @@ void Printer::printBitmap(std::vector< std::vector<bool> > &bitmap) {
 	std::cout << "AFTER DATA TRANS: " << total.size() << std::endl; 
     send_command(ESC_Two);
 }
-
-static std::vector<std::vector<bool>> loadImage(std::string filename){
-    int width, height, channels;
-    stbi_uc *result = stbi_load(filename.c_str(), &width, &height, &channels, 3);
-
-    std::vector< std::vector<bool> > image(height, std::vector<bool>(width, 0));
-    for(int i = 0; i < width; i++){
-        for(int j = 0; j < height; j++){
-            // For each pixel, we will use the Luminosity method:
-            // -> (0.3 * R) + (0.59 * G) + (0.11 * B)
-            float grayscale = result[3*i + width*j*3] * 0.3;
-            grayscale += result[3*i +1 + width*j*3] * 0.59;
-            grayscale += result[3*i +2 + width*j*3] * 0.11;
-            image[j][i] = grayscale < 150 ;
-            //image[j][i] = result[3*i + width*j*3] > (unsigned char) 150;
-        }
-    }
-    stbi_image_free(result);
-
-    return image;
-}
-*/
