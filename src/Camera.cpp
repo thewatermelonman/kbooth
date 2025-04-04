@@ -202,7 +202,7 @@ void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {
         filename += getDateAndTime() + "_" + std::to_string(++image_count) + ".jpg";
         IMG_SaveJPG(capture_surface, filename.c_str(), 100);
     }
-	if (!print_set->print_images && capture_surface != nullptr && logo_image != nullptr) {
+	if (print_set->print_images && capture_surface != nullptr && logo_image != nullptr) {
         float scale = (float) capture_surface->w / logo_image->w;
         SDL_Surface *logo_surf = SDL_CreateSurface(
             capture_surface->w,
