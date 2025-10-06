@@ -29,6 +29,6 @@ cd kbooth
 - cmake
 - [freetype](https://freetype.org) 
 ``` -DFREETYPE_INCLUDE_DIRS=<your-freetype-dir> -DFREETYPE_LIBRARY=<your-freetype-lib>```
-([Download] dll and header)
+([Download](https://github.com/ubawurinna/freetype-windows-binaries/releases) dll and header)
 - ESC/POS Printer
     - libusb compatible driver (Windows: use [Zadig](https://zadig.akeo.ie) to install driver )
