@@ -1,7 +1,7 @@
 # kbooth
 Photobooth Application for printing to ESC/POS Printers.
 
-Tested with 
+unfinished
 
 # External Libraries
 - [SDL3](https://wiki.libsdl.org/SDL3) Sam Lantinga
@@ -29,5 +29,6 @@ cd kbooth
 - cmake
 - [freetype](https://freetype.org) 
 ``` -DFREETYPE_INCLUDE_DIRS=<your-freetype-dir> -DFREETYPE_LIBRARY=<your-freetype-lib>```
+([Download] dll and header)
 - ESC/POS Printer
     - libusb compatible driver (Windows: use [Zadig](https://zadig.akeo.ie) to install driver )
