@@ -223,7 +223,7 @@ void Camera::saveAndPrintImage(Printer *printer, PrintSettings *print_set) {
         SDL_BlitSurface(capture_surface, NULL, logo_surf, &capt_r);
         SDL_BlitSurfaceScaled(logo_image, NULL, logo_surf, &logo_r, SDL_SCALEMODE_NEAREST);
         printer->printSdlSurface(logo_surf, print_set);
-        IMG_SaveJPG(logo_surf, "images/test.jpg", 100);
+        //IMG_SaveJPG(logo_surf, "images/test.jpg", 100);
         SDL_DestroySurface(logo_surf);
         
 	}
