@@ -123,8 +123,8 @@ void load_settings_config() {
             .save_images = true,
             .print_images = true,
             .usb_port = 7,
-            .brightness = 30.0,
-            .contrast = 100.0,
+            .brightness = 39.0,
+            .contrast = 140.0,
             .landscape = false
         },
 		.capture_button = SDLK_SPACE, 
@@ -185,7 +185,7 @@ void handle_user_input(UIWindow *ui, Camera *camera) {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		if ((event.type == SDL_EVENT_QUIT) ||
-			(event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && false &&
+			(event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
 			event.window.windowID == SDL_GetWindowID(window))) {
 			window_should_close = true;
 			break;
