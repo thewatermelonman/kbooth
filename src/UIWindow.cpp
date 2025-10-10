@@ -32,6 +32,7 @@ UIWindow::UIWindow(SDL_Window *window, SDL_Renderer *renderer, Settings *setting
 
 	// settings window
 	settings_opened = false;
+    settings_button_visible = false;
 	ui_visible = true;
 	alpha = 0.96;
 
@@ -94,6 +95,9 @@ void UIWindow::processEvent(SDL_Event *event) {
 		ui_visible = !ui_visible;
         if (ui_visible) settings_opened = false;
         alpha = 0.96;
+	}
+	if (event->type == SDL_EVENT_KEY_DOWN && event->key.key == SDLK_S) {
+		settings_button_visible = !settings_button_visible;
 	}
 }
 
@@ -207,23 +211,25 @@ void UIWindow::renderGlobalButtons() {
 	ImGui::PushFont(font_regular);
     // Settings Button
     ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f));
-    ImGui::Begin("Settings_Button", NULL, 
-                 ImGuiWindowFlags_NoTitleBar | 
-                 ImGuiWindowFlags_NoBackground |
-                 ImGuiWindowFlags_NoDecoration |
-                 ImGuiWindowFlags_NoMove |
-                 ImGuiWindowFlags_NoResize);
-    if (ImGui::Button("Settings")) {
-        settings_opened = !settings_opened;
-        settings_window_size_set = false;
-        alpha = 0.96;
-        settings_window_size = ImGui::GetIO().DisplaySize * ImVec2(0.7f, 0.7f);
+    if (settings_button_visible) {
+        ImGui::Begin("Settings_Button", NULL, 
+                     ImGuiWindowFlags_NoTitleBar | 
+                     ImGuiWindowFlags_NoBackground |
+                     ImGuiWindowFlags_NoDecoration |
+                     ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoResize);
+        if (ImGui::Button("Settings")) {
+            settings_opened = !settings_opened;
+            settings_window_size_set = false;
+            alpha = 0.96;
+            settings_window_size = ImGui::GetIO().DisplaySize * ImVec2(0.7f, 0.7f);
+        }
+        ImGui::End();
     }
-    ImGui::End();
 
     // Take Picture Button
     ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    ImVec2 button_size = ImVec2(display_size.y / 16.0f, display_size.y / 16.0f);
+    ImVec2 button_size = ImVec2(display_size.y / 4.0f, display_size.y / 4.0f);
     ImGui::SetNextWindowSize(ImVec2(button_size.x * 2, button_size.x * 2));
     ImGui::SetNextWindowPos(ImVec2((display_size.x - button_size.x) / 2.0f, display_size.y - button_size.x - 50.0f));
     ImGui::Begin("Take Pic Button", NULL, 

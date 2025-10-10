@@ -31,6 +31,7 @@ class UIWindow {
         ImFont *font_regular;
         ImFont *font_countdown;
         bool ui_visible; // show/hide entire ui
+        bool settings_button_visible;
         bool settings_opened; // show/hide settings
         float alpha;
 
