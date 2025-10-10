@@ -125,7 +125,7 @@ void load_settings_config() {
             .usb_port = 7,
             .brightness = 30.0,
             .contrast = 100.0,
-            .landscape = true
+            .landscape = false
         },
 		.capture_button = SDLK_SPACE, 
         .optimize_rasp_pi = true,
@@ -185,7 +185,7 @@ void handle_user_input(UIWindow *ui, Camera *camera) {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		if ((event.type == SDL_EVENT_QUIT) ||
-			(event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
+			(event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && false &&
 			event.window.windowID == SDL_GetWindowID(window))) {
 			window_should_close = true;
 			break;
