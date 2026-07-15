@@ -452,7 +452,7 @@ bool Camera::renderTexture(
         // this is defined by the aspect ratio of print_settings
         SDL_FRect frame_F;
         SDL_RectToFRect(&frame, &frame_F);
-        SDL_SetRenderDrawColor(renderer, 219, 23, 137, 255);
+        SDL_SetRenderDrawColor(renderer, 26, 79, 61, 255);
         error = error || !SDL_RenderRect(renderer, &frame_F);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
         error = error || !SDL_RenderFillRect(renderer, &framing_bar_start);
