@@ -214,7 +214,6 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
     int w, h;
     SDL_Surface *scaled_surface;
     DitherImage* dither_image;
-	SDL_AdjustBrightnessContrast(capture_surface, print_set->brightness, print_set->contrast);
     if (print_set->landscape) {
         int max_height = 576;
         float scaled_width = (float) capture_surface->w * max_height / (float) capture_surface->h;
