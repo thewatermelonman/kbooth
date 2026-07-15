@@ -274,7 +274,7 @@ void Camera::createCountdownTexture(SDL_Renderer *renderer) {
         countdown_font, 
         (Uint32) (48 + countdown.position), 
         countdown_color); 
-    SDL_Color cd_color = {.r = 255, .g = 255, .b = 255, .a = 255};
+    SDL_Color cd_color = {.r = 26, .g = 79, .b = 61, .a = 255};
     SDL_Surface *cd_border_surface = TTF_RenderGlyph_Blended(
         countdown_border_font, 
         (Uint32) (48 + countdown.position), 
