@@ -11,35 +11,6 @@
 
 using namespace Kbooth;
 
-void SDL_AdjustBrightnessContrast(SDL_Surface* surface, int brightness, float contrast) {
-	if (!SDL_LockSurface(surface)) {
-        return; // handle error as needed
-    }
-
-    const SDL_PixelFormatDetails* fmt = SDL_GetPixelFormatDetails(surface->format);
-    SDL_Palette* palette = SDL_GetSurfacePalette(surface); // NULL if not indexed
-
-    Uint32* pixels = (Uint32*)surface->pixels;
-    int pixelCount = (surface->pitch / 4) * surface->h; // assumes 32-bit format
-
-    for (int i = 0; i < pixelCount; i++) {
-        Uint8 r, g, b, a;
-        SDL_GetRGBA(pixels[i], fmt, palette, &r, &g, &b, &a);
-
-        float rf = contrast * (r - 128) + 128 + brightness;
-        float gf = contrast * (g - 128) + 128 + brightness;
-        float bf = contrast * (b - 128) + 128 + brightness;
-
-        r = (Uint8)fminf(fmaxf(rf, 0.0f), 255.0f);
-        g = (Uint8)fminf(fmaxf(gf, 0.0f), 255.0f);
-        b = (Uint8)fminf(fmaxf(bf, 0.0f), 255.0f);
-
-        pixels[i] = SDL_MapRGBA(fmt, palette, r, g, b, a);
-    }
-
-    SDL_UnlockSurface(surface);	
-}
-
 int brightnessContrast(float b, float c, float x) {
     float factor = (259.0f * (c + 255.0f)) / (255.0f * (259.0f - c));
     float y = factor * (x - 128.0f) + 128.0f + b;
