@@ -227,27 +227,30 @@ void UIWindow::renderGlobalButtons() {
         ImGui::End();
     }
 
-    // Take Picture Button
-    ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    ImVec2 button_size = ImVec2(display_size.y / 4.0f, display_size.y / 4.0f);
-    ImGui::SetNextWindowSize(ImVec2(button_size.x * 2, button_size.x * 2));
-    ImGui::SetNextWindowPos(ImVec2((display_size.x - button_size.x) / 2.0f, display_size.y - button_size.x - 50.0f));
-    ImGui::Begin("Take Pic Button", NULL, 
-                 ImGuiWindowFlags_NoTitleBar | 
-                 ImGuiWindowFlags_NoBackground |
-                 ImGuiWindowFlags_NoDecoration |
-                 ImGuiWindowFlags_NoMove |
-                 ImGuiWindowFlags_NoResize);
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 1.0, 1.0, 0.7));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6, 0.6, 0.6, 0.7));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0, 1.0, 1.0, 1.0));
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, button_size.x / 2.0f);
-    if (ButtonCircle(" ", button_size, ImGuiButtonFlags_None)) {
-        camera->startCountdown(&settings->countdown);
-    }
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(3);
-    ImGui::End();
+	if (*countdown_status) {
+		// Take Picture Button
+		ImVec2 display_size = ImGui::GetIO().DisplaySize;
+		ImVec2 button_size = ImVec2(display_size.y / 4.0f, display_size.y / 4.0f);
+		ImGui::SetNextWindowSize(ImVec2(button_size.x * 2, button_size.x * 2));
+		ImGui::SetNextWindowPos(ImVec2((display_size.x - button_size.x) / 2.0f, display_size.y - button_size.x - 50.0f));
+		ImGui::Begin("Take Pic Button", NULL, 
+				ImGuiWindowFlags_NoTitleBar | 
+				ImGuiWindowFlags_NoBackground |
+				ImGuiWindowFlags_NoDecoration |
+				ImGuiWindowFlags_NoMove |
+				ImGuiWindowFlags_NoResize);
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 1.0, 1.0, 0.7));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6, 0.6, 0.6, 0.7));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0, 1.0, 1.0, 1.0));
+		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, button_size.x / 2.0f);
+		if (ButtonCircle(" ", button_size, ImGuiButtonFlags_None)) {
+			camera->startCountdown(&settings->countdown);
+		}
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor(3);
+		ImGui::End();
+	}
+
     ImGui::PopFont();
 }
 
