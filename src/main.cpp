@@ -123,8 +123,8 @@ void load_settings_config() {
             .save_images = true,
             .print_images = true,
             .usb_port = 7,
-            .brightness = 39.0,
-            .contrast = 1.2,
+            .brightness = 89.0,
+            .contrast = 6.2,
             .landscape = false
         },
 		.capture_button = SDLK_SPACE, 
