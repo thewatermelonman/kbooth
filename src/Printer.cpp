@@ -13,10 +13,14 @@ using namespace Kbooth;
 
 
 int brightnessContrast(float b, float c, float x) {
-    float y = b + c + x * ((255.0f - c)/255.0f);
-    return (int) std::min(255.0f, y);
+    float factor = (259.0f * (c + 255.0f)) / (255.0f * (259.0f - c));
+    float y = factor * (x - 128.0f) + 128.0f + b;
+    if (y < 0.0f) return 0;
+    if (y > 255.0f) return 255;
+    
+    return (int)y;
 }
-
+ 
 bool Printer::initAndOpen(UsbDevice *default_dev) {
     std::cout << "HERE I AM" << std::endl;
     ctx = nullptr;

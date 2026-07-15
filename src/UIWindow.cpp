@@ -405,8 +405,8 @@ void UIWindow::renderSettingsWindow() {
             if (ImGui::RadioButton("Landscape", settings->print_settings.landscape)) { settings->print_settings.landscape = true; } ImGui::SameLine();
             if (ImGui::RadioButton("Portrait", !settings->print_settings.landscape)) { settings->print_settings.landscape = false; }
 
-            ImGui::SliderFloat("Image Brightness", &settings->print_settings.brightness, 30.0f, 70.0f, "");
-            ImGui::SliderFloat("Image Contrast", &settings->print_settings.contrast, 200.0f, 100.0f, "");
+            ImGui::SliderFloat("Image Brightness", &settings->print_settings.brightness, 0.0f, 100.0f, "%.1f");
+            ImGui::SliderFloat("Image Contrast", &settings->print_settings.contrast, -50.0f, 150.0f, "%.1f");
             if (settings->print_settings.print_images) ImGui::EndDisabled();
 
             ImGui::EndTabItem();

@@ -22,7 +22,7 @@ Camera::Camera() :
 	camera(nullptr),
 	image_count(0) {
     cameras = SDL_GetCameras(&cameras_size);
-    char font[] = "../assets/fonts/SimplyMono-Bold.ttf"; // default font
+    char font[] = "../assets/fonts/Anton.ttf"; // default font
     countdown_font = TTF_OpenFont(font, 800);
     countdown_border_font = TTF_OpenFont(font, 800);
     TTF_SetFontOutline(countdown_border_font, 8);
