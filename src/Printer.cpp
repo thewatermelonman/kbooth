@@ -11,6 +11,34 @@
 
 using namespace Kbooth;
 
+void SDL_AdjustBrightnessContrast(SDL_Surface* surface, int brightness, float contrast) {
+	if (!SDL_LockSurface(surface)) {
+        return; // handle error as needed
+    }
+
+    const SDL_PixelFormatDetails* fmt = SDL_GetPixelFormatDetails(surface->format);
+    SDL_Palette* palette = SDL_GetSurfacePalette(surface); // NULL if not indexed
+
+    Uint32* pixels = (Uint32*)surface->pixels;
+    int pixelCount = (surface->pitch / 4) * surface->h; // assumes 32-bit format
+
+    for (int i = 0; i < pixelCount; i++) {
+        Uint8 r, g, b, a;
+        SDL_GetRGBA(pixels[i], fmt, palette, &r, &g, &b, &a);
+
+        float rf = contrast * (r - 128) + 128 + brightness;
+        float gf = contrast * (g - 128) + 128 + brightness;
+        float bf = contrast * (b - 128) + 128 + brightness;
+
+        r = (Uint8)fminf(fmaxf(rf, 0.0f), 255.0f);
+        g = (Uint8)fminf(fmaxf(gf, 0.0f), 255.0f);
+        b = (Uint8)fminf(fmaxf(bf, 0.0f), 255.0f);
+
+        pixels[i] = SDL_MapRGBA(fmt, palette, r, g, b, a);
+    }
+
+    SDL_UnlockSurface(surface);	
+}
 
 int brightnessContrast(float b, float c, float x) {
     float factor = (259.0f * (c + 255.0f)) / (255.0f * (259.0f - c));
@@ -215,6 +243,7 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
     int w, h;
     SDL_Surface *scaled_surface;
     DitherImage* dither_image;
+	SDL_AdjustBrightnessContrast(capture_surface, print_set->brightness, print_set->contrast);
     if (print_set->landscape) {
         int max_height = 576;
         float scaled_width = (float) capture_surface->w * max_height / (float) capture_surface->h;
@@ -232,9 +261,6 @@ void Printer::printSdlSurface(SDL_Surface *capture_surface, PrintSettings *print
     for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
             SDL_ReadSurfacePixel(scaled_surface, x, y, &r, &g, &b, NULL);
-            r = brightnessContrast(print_set->brightness, print_set->contrast, r);
-            g = brightnessContrast(print_set->brightness, print_set->contrast, g);
-            b = brightnessContrast(print_set->brightness, print_set->contrast, b);
             if (print_set->landscape) {
                 if (x <= 2 && y <= 2) std::cout <<  x << "|" << y << " --To-- " << h-y << "|" << x << std::endl;
                 DitherImage_set_pixel(dither_image, h-y, x, r, g, b, true);
