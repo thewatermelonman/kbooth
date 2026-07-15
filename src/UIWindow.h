@@ -19,7 +19,7 @@ class UIWindow {
         ImVec4 button_color_gray_hover = ImVec4(0.3, 0.3, 0.6, 1.0);
         ImVec4 button_color_gray_active = ImVec4(0.3, 0.6, 0.7, 1.0);
         ImVec4 kbooth_primary_color = ImVec4(218 / 255.0f, 126 / 255.0f, 52 / 255.0f, 1.0f);
-        ImVec4 kbooth_primary_color_hovered = ImVec4((219 + 36) / 255.0f, (23 + 60) / 255.0f, (137 + 40) / 255.0f, 1.0f);
+        ImVec4 kbooth_primary_color_hovered = ImVec4(26 / 255.0f, 79 / 255.0f, 61 / 255.0f, 1.0f);
         ImVec4 kbooth_secondary_color = ImVec4(0.1, 0.2, 0.3, 1.0f);        
         ImVec4 kbooth_secondary_color_hovered = ImVec4(0.2, 0.3, 0.4, 1.0f);
         ImVec4 kbooth_bg_color = ImVec4(0.0, 0.1, 0.2, 1.0);
