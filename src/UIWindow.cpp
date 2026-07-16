@@ -227,7 +227,7 @@ void UIWindow::renderGlobalButtons() {
         ImGui::End();
     }
 
-	if (*countdown_status) {
+	if (!(*countdown_status)) {
 		// Take Picture Button
 		ImVec2 display_size = ImGui::GetIO().DisplaySize;
 		ImVec2 button_size = ImVec2(display_size.y / 4.0f, display_size.y / 4.0f);
